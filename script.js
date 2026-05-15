@@ -1,6 +1,6 @@
 // ========== CONFIGURACIÓN SUPABASE ==========
-const SUPABASE_URL = 'https://hxdexehhsrrwjnjmhbxa.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 
 let supabaseClient = null;
 
@@ -65,7 +65,7 @@ let isLoggedIn = false;
 let currentUser = null;
 let currentButtons = [];
 
-// ========== FUNCIONES DE USUARIOS ==========
+// ========== FUNCIONES DE VALIDACIÓN ==========
 
 // Validar contraseña (requisitos mínimos)
 function validatePassword(password) {
@@ -86,9 +86,13 @@ function validateUsername(username) {
     return null;
 }
 
+// ========== FUNCIONES DE USUARIOS ==========
+
 // Registrar nuevo usuario
 async function registerUser(username, password, email = '') {
     try {
+        console.log('Registrando usuario:', username);
+
         // Validar
         const usernameError = validateUsername(username);
         if (usernameError) {
@@ -103,8 +107,26 @@ async function registerUser(username, password, email = '') {
         }
 
         if (!supabaseClient) {
-            alert('Servidor no disponible. Intenta más tarde.');
-            return false;
+            console.log('Supabase no disponible, guardando en localStorage');
+            
+            // Guardar en localStorage como respaldo
+            let users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
+            
+            // Verificar si el usuario ya existe
+            if (users.find(u => u.username === username)) {
+                alert('Este usuario ya existe');
+                return false;
+            }
+            
+            users.push({
+                username: username,
+                password: btoa(password),
+                email: email
+            });
+            
+            localStorage.setItem('portalUsers', JSON.stringify(users));
+            alert('¡Usuario registrado correctamente! Ahora puedes iniciar sesión.');
+            return true;
         }
 
         // Verificar si el usuario ya existe
@@ -124,14 +146,14 @@ async function registerUser(username, password, email = '') {
             .from('users')
             .insert([{
                 username: username,
-                password: btoa(password), // Codificar en base64 (no es seguro para producción)
+                password: btoa(password),
                 email: email
             }])
             .select();
 
         if (error) {
             console.error('Error al registrar:', error);
-            alert('Error al registrar el usuario');
+            alert('Error al registrar el usuario. Intenta más tarde.');
             return false;
         }
 
@@ -149,8 +171,28 @@ async function registerUser(username, password, email = '') {
 // Validar usuario desde Supabase
 async function validateLoginFromSupabase(username, password) {
     try {
+        console.log('Validando login para:', username);
+
+        // Si Supabase no está disponible, usa localStorage
         if (!supabaseClient) {
-            console.log('Supabase no disponible');
+            console.log('Supabase no disponible, usando localStorage');
+            
+            const users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
+            const user = users.find(u => u.username === username);
+            
+            if (!user) {
+                console.log('Usuario no encontrado en localStorage');
+                return null;
+            }
+
+            const encodedPassword = btoa(password);
+            if (user.password === encodedPassword) {
+                return {
+                    username: user.username,
+                    email: user.email || ''
+                };
+            }
+
             return null;
         }
 
@@ -171,7 +213,7 @@ async function validateLoginFromSupabase(username, password) {
             return {
                 id: data.id,
                 username: data.username,
-                email: data.email
+                email: data.email || ''
             };
         }
 
@@ -180,6 +222,142 @@ async function validateLoginFromSupabase(username, password) {
     } catch (error) {
         console.error('Error validando usuario:', error);
         return null;
+    }
+}
+
+// ========== FUNCIONES DE AUTENTICACIÓN ==========
+
+function handleLogin() {
+    const username = document.getElementById('loginUsername');
+    const password = document.getElementById('loginPassword');
+    const message = document.getElementById('loginMessage');
+
+    if (!username || !password || !message) {
+        console.error('Faltan elementos del formulario de login');
+        return;
+    }
+
+    const usernameValue = username.value.trim();
+    const passwordValue = password.value;
+
+    console.log('Intento de login:', usernameValue);
+
+    if (!usernameValue) {
+        message.textContent = 'Por favor ingresa el usuario';
+        return;
+    }
+
+    if (!passwordValue) {
+        message.textContent = 'Por favor ingresa la contraseña';
+        return;
+    }
+
+    // Validar desde Supabase
+    validateLoginFromSupabase(usernameValue, passwordValue).then(validUser => {
+        if (validUser) {
+            console.log('Login exitoso para:', usernameValue);
+            isLoggedIn = true;
+            currentUser = validUser.username;
+            message.textContent = '';
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainScreen').style.display = 'flex';
+            username.value = '';
+            password.value = '';
+            initializeMainScreen();
+        } else {
+            console.log('Login fallido');
+            message.textContent = 'Usuario o contraseña incorrectos';
+            password.value = '';
+        }
+    });
+}
+
+function toggleRegisterForm() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    if (!loginForm || !registerForm) {
+        console.error('Faltan formularios');
+        return;
+    }
+
+    if (loginForm.style.display === 'none') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        const usernameInput = document.getElementById('loginUsername');
+        if (usernameInput) usernameInput.focus();
+    } else {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+        const registerUsernameInput = document.getElementById('registerUsername');
+        if (registerUsernameInput) registerUsernameInput.focus();
+    }
+
+    document.getElementById('loginMessage').textContent = '';
+    document.getElementById('registerMessage').textContent = '';
+}
+
+async function handleRegister() {
+    const username = document.getElementById('registerUsername');
+    const password = document.getElementById('registerPassword');
+    const confirmPassword = document.getElementById('registerConfirmPassword');
+    const email = document.getElementById('registerEmail');
+    const message = document.getElementById('registerMessage');
+
+    // Verificar que los elementos existen
+    if (!username || !password || !confirmPassword || !email || !message) {
+        console.error('Faltan elementos del formulario de registro');
+        return;
+    }
+
+    const usernameValue = username.value.trim();
+    const passwordValue = password.value;
+    const confirmPasswordValue = confirmPassword.value;
+    const emailValue = email.value.trim();
+
+    // Limpiar mensaje anterior
+    message.textContent = '';
+    message.style.color = '#c41e3a';
+
+    if (!usernameValue || !passwordValue || !confirmPasswordValue) {
+        message.textContent = 'Por favor completa todos los campos';
+        return;
+    }
+
+    if (passwordValue !== confirmPasswordValue) {
+        message.textContent = 'Las contraseñas no coinciden';
+        return;
+    }
+
+    // Llamar a la función de registro
+    const success = await registerUser(usernameValue, passwordValue, emailValue);
+    
+    if (success) {
+        // Limpiar campos
+        username.value = '';
+        password.value = '';
+        confirmPassword.value = '';
+        email.value = '';
+        
+        // Cambiar a login
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+        const loginUsernameInput = document.getElementById('loginUsername');
+        if (loginUsernameInput) loginUsernameInput.focus();
+        
+        message.textContent = '';
+    }
+}
+
+function handleLogout() {
+    if (confirm('¿Deseas cerrar sesión?')) {
+        isLoggedIn = false;
+        currentUser = null;
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginUsername').focus();
     }
 }
 
@@ -295,107 +473,6 @@ async function deleteButtonFromSupabase(buttonId) {
     } catch (error) {
         console.error('Error al eliminar:', error);
         updateSyncStatus('❌ Error al eliminar', 'error');
-    }
-}
-
-// ========== FUNCIONES DE AUTENTICACIÓN ==========
-
-function handleLogin() {
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const message = document.getElementById('loginMessage');
-
-    console.log('Intento de login:', username);
-
-    if (!username) {
-        message.textContent = 'Por favor ingresa el usuario';
-        return;
-    }
-
-    if (!password) {
-        message.textContent = 'Por favor ingresa la contraseña';
-        return;
-    }
-
-    // Validar desde Supabase
-    validateLoginFromSupabase(username, password).then(validUser => {
-        if (validUser) {
-            console.log('Login exitoso para:', username);
-            isLoggedIn = true;
-            currentUser = validUser.username;
-            message.textContent = '';
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainScreen').style.display = 'flex';
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            initializeMainScreen();
-        } else {
-            console.log('Login fallido');
-            message.textContent = 'Usuario o contraseña incorrectos';
-            document.getElementById('loginPassword').value = '';
-        }
-    });
-}
-
-function handleRegister() {
-    const username = document.getElementById('registerUsername').value.trim();
-    const password = document.getElementById('registerPassword').value;
-    const confirmPassword = document.getElementById('registerConfirmPassword').value;
-    const email = document.getElementById('registerEmail').value.trim();
-    const message = document.getElementById('registerMessage');
-
-    if (!username || !password || !confirmPassword) {
-        message.textContent = 'Por favor completa todos los campos';
-        message.style.color = '#c41e3a';
-        return;
-    }
-
-    if (password !== confirmPassword) {
-        message.textContent = 'Las contraseñas no coinciden';
-        message.style.color = '#c41e3a';
-        return;
-    }
-
-    registerUser(username, password, email).then(success => {
-        if (success) {
-            document.getElementById('registerUsername').value = '';
-            document.getElementById('registerPassword').value = '';
-            document.getElementById('registerConfirmPassword').value = '';
-            document.getElementById('registerEmail').value = '';
-            
-            // Cambiar a login
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('registerMessage').textContent = '';
-        }
-    });
-}
-
-function toggleRegisterForm() {
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
-
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-    }
-
-    document.getElementById('loginMessage').textContent = '';
-    document.getElementById('registerMessage').textContent = '';
-}
-
-function handleLogout() {
-    if (confirm('¿Deseas cerrar sesión?')) {
-        isLoggedIn = false;
-        currentUser = null;
-        document.getElementById('mainScreen').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('loginUsername').focus();
     }
 }
 
@@ -534,40 +611,50 @@ function setupColorPicker() {
 }
 
 async function addButton() {
-    const name = document.getElementById('btnName').value.trim();
-    const url = document.getElementById('btnUrl').value.trim();
-    const emoji = document.getElementById('btnEmoji').value.trim();
-    let color = document.getElementById('btnColorHex').value.trim();
+    const name = document.getElementById('btnName');
+    const url = document.getElementById('btnUrl');
+    const emoji = document.getElementById('btnEmoji');
+    const color = document.getElementById('btnColorHex');
 
-    if (!name || !url) {
+    if (!name || !url || !emoji || !color) {
+        console.error('Faltan elementos del formulario de botón');
+        return;
+    }
+
+    const nameValue = name.value.trim();
+    const urlValue = url.value.trim();
+    const emojiValue = emoji.value.trim();
+    const colorValue = color.value.trim();
+
+    if (!nameValue || !urlValue) {
         alert('Por favor completa todos los campos');
         return;
     }
 
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    if (!urlValue.startsWith('http://') && !urlValue.startsWith('https://')) {
         alert('La URL debe comenzar con http:// o https://');
         return;
     }
 
-    if (!/^#[0-9A-F]{6}$/i.test(color)) {
+    if (!/^#[0-9A-F]{6}$/i.test(colorValue)) {
         alert('Por favor ingresa un color hexadecimal válido (ej: #5b9cde)');
         return;
     }
 
     const newButton = {
-        name: name,
-        url: url,
-        color: color.toUpperCase(),
-        icon: emoji || '🔗'
+        name: nameValue,
+        url: urlValue,
+        color: colorValue.toUpperCase(),
+        icon: emojiValue || '🔗'
     };
 
     await saveButtonToSupabase(newButton);
 
-    document.getElementById('btnName').value = '';
-    document.getElementById('btnUrl').value = '';
-    document.getElementById('btnEmoji').value = '🔗';
+    name.value = '';
+    url.value = '';
+    emoji.value = '🔗';
     document.getElementById('btnColorPicker').value = '#5b9cde';
-    document.getElementById('btnColorHex').value = '#5b9cde';
+    color.value = '#5b9cde';
     document.getElementById('colorPreview').style.background = '#5b9cde';
 
     toggleAddSection();
@@ -639,7 +726,7 @@ function openWindow() {
 }
 
 async function initializeMainScreen() {
-    console.log('Inicializando pantalla principal');
+    console.log('Inicializando pantalla principal para:', currentUser);
     
     const buttons = await loadButtonsFromSupabase();
     renderButtons(buttons);
@@ -710,6 +797,7 @@ async function initializeMainScreen() {
     }
 }
 
+// ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM cargado');
     
@@ -723,10 +811,43 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
 
-    if (loginBtn) loginBtn.addEventListener('click', handleLogin);
-    if (registerToggleBtn) registerToggleBtn.addEventListener('click', toggleRegisterForm);
-    if (loginBackBtn) loginBackBtn.addEventListener('click', toggleRegisterForm);
-    if (registerBtn) registerBtn.addEventListener('click', handleRegister);
+    console.log('Elementos encontrados:');
+    console.log('loginBtn:', loginBtn);
+    console.log('registerToggleBtn:', registerToggleBtn);
+    console.log('loginBackBtn:', loginBackBtn);
+    console.log('registerBtn:', registerBtn);
+
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Click en botón de login');
+            handleLogin();
+        });
+    }
+    
+    if (registerToggleBtn) {
+        registerToggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Click en botón toggle registro');
+            toggleRegisterForm();
+        });
+    }
+    
+    if (loginBackBtn) {
+        loginBackBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Click en botón volver');
+            toggleRegisterForm();
+        });
+    }
+    
+    if (registerBtn) {
+        registerBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Click en botón registrarse');
+            handleRegister();
+        });
+    }
     
     if (loginUsername) {
         loginUsername.addEventListener('keypress', (e) => {
