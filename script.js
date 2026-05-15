@@ -1,6 +1,6 @@
 // ========== CONFIGURACIÓN SUPABASE ==========
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://hxdexehhsrrwjnjmhbxa.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
 
 let supabaseClient = null;
 
