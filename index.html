@@ -30,29 +30,54 @@
     <div class="desktop-background"></div>
     
     <!-- PANTALLA DE LOGIN -->
-    <div id="loginScreen" class="login-screen">
-        <div class="login-window">
-            <div class="login-title-bar">
-                <div class="login-title-text">Iniciar Sesión</div>
-            </div>
-            <div class="login-content">
-                <div class="login-icon">🔐</div>
-                <div class="login-form">
-                    <div class="login-form-group">
-                        <label for="loginUsername">Usuario:</label>
-                        <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autofocus>
-                    </div>
-                    <div class="login-form-group">
-                        <label for="loginPassword">Contraseña:</label>
-                        <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña">
-                    </div>
-                    <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
-                    <div class="login-message" id="loginMessage"></div>
+<div id="loginScreen" class="login-screen">
+    <div class="login-window">
+        <div class="login-title-bar">
+            <div class="login-title-text">Iniciar Sesión</div>
+        </div>
+        <div class="login-content">
+            <div class="login-icon">🔐</div>
+            
+            <!-- FORMULARIO DE LOGIN -->
+            <div class="login-form" id="loginForm">
+                <div class="login-form-group">
+                    <label for="loginUsername">Usuario:</label>
+                    <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autofocus>
                 </div>
+                <div class="login-form-group">
+                    <label for="loginPassword">Contraseña:</label>
+                    <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña">
+                </div>
+                <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
+                <button type="button" class="register-toggle-btn" id="registerToggleBtn">¿No tienes cuenta? Regístrate</button>
+                <div class="login-message" id="loginMessage"></div>
+            </div>
+
+            <!-- FORMULARIO DE REGISTRO -->
+            <div class="login-form" id="registerForm" style="display: none;">
+                <div class="login-form-group">
+                    <label for="registerUsername">Usuario:</label>
+                    <input type="text" id="registerUsername" placeholder="Elige un usuario">
+                </div>
+                <div class="login-form-group">
+                    <label for="registerEmail">Email (opcional):</label>
+                    <input type="email" id="registerEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-form-group">
+                    <label for="registerPassword">Contraseña:</label>
+                    <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="login-form-group">
+                    <label for="registerConfirmPassword">Confirmar Contraseña:</label>
+                    <input type="password" id="registerConfirmPassword" placeholder="Repite tu contraseña">
+                </div>
+                <button class="login-btn" id="registerBtn">Registrarse</button>
+                <button type="button" class="register-toggle-btn" id="loginBackBtn">Volver al login</button>
+                <div class="login-message" id="registerMessage"></div>
             </div>
         </div>
     </div>
-
+</div>
     <!-- PANTALLA PRINCIPAL -->
     <div id="mainScreen" class="main-screen" style="display: none;">
         <!-- Ícono flotante para reapertura -->
