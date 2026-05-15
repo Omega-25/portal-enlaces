@@ -1,22 +1,28 @@
 // ========== CONFIGURACIÓN SUPABASE ==========
 // REEMPLAZA CON TUS DATOS DE SUPABASE
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://hxdexehhsrrwjnjmhbxa.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
 
-let supabase = null;
+let supabaseClient = null;
 
 // Inicializar Supabase
 function initSupabase() {
-    if (window.supabase && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    try {
+        if (window.supabase && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase inicializado correctamente');
+        }
+    } catch (error) {
+        console.error('Error inicializando Supabase:', error);
     }
 }
 
 // Credenciales correctas
 const VALID_USERS = [
-    { username: 'omega25', password: 'gatoputo' },
-    { username: 'admin', password: '1234' },
-    { username: 'usuario2', password: 'contraseña2' }
+   { username: 'Omega_25', password: 'Lemos2014' },
+    { username: 'Dax733', password: 'Leon69' },
+    { username: 'usuario2', password: 'contr4ceña2' }
+
 ];
 
 // Lista de emojis disponibles
@@ -66,59 +72,74 @@ let isDragging = false;
 let offset = { x: 0, y: 0 };
 let isLoggedIn = false;
 let currentUser = null;
+let currentButtons = [];
 
 // ========== FUNCIONES DE SINCRONIZACIÓN ==========
 function updateSyncStatus(message, type = 'success') {
     const status = document.getElementById('syncStatus');
-    status.textContent = message;
-    status.className = 'sync-status';
-    if (type === 'error') status.classList.add('error');
-    if (type === 'syncing') status.classList.add('syncing');
+    if (status) {
+        status.textContent = message;
+        status.className = 'sync-status';
+        if (type === 'error') status.classList.add('error');
+        if (type === 'syncing') status.classList.add('syncing');
+    }
 }
 
 async function loadButtonsFromSupabase() {
     try {
-        if (!supabase) return defaultButtons;
+        if (!supabaseClient) {
+            console.log('Supabase no inicializado, usando localStorage');
+            const saved = localStorage.getItem('portalButtons');
+            return saved ? JSON.parse(saved) : defaultButtons;
+        }
 
         updateSyncStatus('🔄 Sincronizando...', 'syncing');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('buttons')
             .select('*')
             .order('created_at', { ascending: true });
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error Supabase:', error);
+            throw error;
+        }
 
         if (data && data.length > 0) {
+            console.log('Botones cargados desde Supabase:', data);
             updateSyncStatus('✅ Sincronizado');
-            return data.map(btn => ({
-                id: btn.id,
-                name: btn.name,
-                url: btn.url,
-                color: btn.color,
-                icon: btn.icon
-            }));
+            currentButtons = data;
+            localStorage.setItem('portalButtons', JSON.stringify(data));
+            return data;
         }
 
         updateSyncStatus('✅ Sincronizado');
+        currentButtons = defaultButtons;
         return defaultButtons;
     } catch (error) {
         console.error('Error al cargar desde Supabase:', error);
         updateSyncStatus('⚠️ Usando datos locales', 'error');
-        return JSON.parse(localStorage.getItem('portalButtons')) || defaultButtons;
+        const saved = localStorage.getItem('portalButtons');
+        const buttons = saved ? JSON.parse(saved) : defaultButtons;
+        currentButtons = buttons;
+        return buttons;
     }
 }
 
 async function saveButtonToSupabase(button) {
     try {
-        if (!supabase) {
-            localStorage.setItem('portalButtons', JSON.stringify([button]));
-            return;
+        if (!supabaseClient) {
+            console.log('Guardando en localStorage');
+            const saved = localStorage.getItem('portalButtons') || '[]';
+            const buttons = JSON.parse(saved);
+            buttons.push(button);
+            localStorage.setItem('portalButtons', JSON.stringify(buttons));
+            return button;
         }
 
         updateSyncStatus('🔄 Guardando...', 'syncing');
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('buttons')
             .insert([{
                 name: button.name,
@@ -130,27 +151,38 @@ async function saveButtonToSupabase(button) {
 
         if (error) throw error;
 
+        console.log('Botón guardado:', data);
         updateSyncStatus('✅ Guardado');
         return data[0];
     } catch (error) {
         console.error('Error al guardar:', error);
         updateSyncStatus('❌ Error al guardar', 'error');
+        
+        // Guardar en localStorage como respaldo
+        const saved = localStorage.getItem('portalButtons') || '[]';
+        const buttons = JSON.parse(saved);
+        buttons.push(button);
+        localStorage.setItem('portalButtons', JSON.stringify(buttons));
     }
 }
 
 async function deleteButtonFromSupabase(buttonId) {
     try {
-        if (!supabase) return;
+        if (!supabaseClient) {
+            console.log('Eliminando de localStorage');
+            return;
+        }
 
         updateSyncStatus('🔄 Eliminando...', 'syncing');
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('buttons')
             .delete()
             .eq('id', buttonId);
 
         if (error) throw error;
 
+        console.log('Botón eliminado');
         updateSyncStatus('✅ Eliminado');
     } catch (error) {
         console.error('Error al eliminar:', error);
@@ -160,13 +192,16 @@ async function deleteButtonFromSupabase(buttonId) {
 
 // ========== FUNCIONES DE AUTENTICACIÓN ==========
 function validateLogin(username, password) {
-    return VALID_USERS.find(user => user.username === username && user.password === password);
+    const user = VALID_USERS.find(u => u.username === username && u.password === password);
+    return user;
 }
 
 function handleLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
     const message = document.getElementById('loginMessage');
+
+    console.log('Intento de login:', username);
 
     if (!username) {
         message.textContent = 'Por favor ingresa el usuario';
@@ -181,6 +216,7 @@ function handleLogin() {
     const validUser = validateLogin(username, password);
     
     if (validUser) {
+        console.log('Login exitoso para:', username);
         isLoggedIn = true;
         currentUser = validUser.username;
         message.textContent = '';
@@ -190,6 +226,7 @@ function handleLogin() {
         document.getElementById('loginPassword').value = '';
         initializeMainScreen();
     } else {
+        console.log('Login fallido');
         message.textContent = 'Usuario o contraseña incorrectos';
         document.getElementById('loginPassword').value = '';
     }
@@ -217,6 +254,8 @@ function getBrightness(hexColor) {
 
 function renderButtons(buttons) {
     const grid = document.getElementById('buttonsGrid');
+    if (!grid) return;
+    
     grid.innerHTML = '';
 
     buttons.forEach((btn, index) => {
@@ -243,6 +282,7 @@ function renderButtons(buttons) {
                     deleteButtonFromSupabase(btn.id);
                 }
                 buttons.splice(index, 1);
+                currentButtons = buttons;
                 renderButtons(buttons);
             }
         });
@@ -255,10 +295,13 @@ function toggleAddSection() {
     const addSection = document.getElementById('addSection');
     const expandBtn = document.getElementById('expandAddBtn');
     
+    if (!addSection || !expandBtn) return;
+    
     if (addSection.style.display === 'none' || addSection.style.display === '') {
         addSection.style.display = 'block';
         expandBtn.style.display = 'none';
-        document.getElementById('btnName').focus();
+        const nameInput = document.getElementById('btnName');
+        if (nameInput) nameInput.focus();
     } else {
         addSection.style.display = 'none';
         expandBtn.style.display = 'block';
@@ -268,6 +311,8 @@ function toggleAddSection() {
 
 function toggleEmojiModal() {
     const emojiModal = document.getElementById('emojiModal');
+    if (!emojiModal) return;
+    
     if (emojiModal.style.display === 'none' || emojiModal.style.display === '') {
         populateEmojiGrid();
         emojiModal.style.display = 'block';
@@ -278,11 +323,13 @@ function toggleEmojiModal() {
 
 function closeEmojiModal() {
     const emojiModal = document.getElementById('emojiModal');
-    emojiModal.style.display = 'none';
+    if (emojiModal) emojiModal.style.display = 'none';
 }
 
 function populateEmojiGrid() {
     const emojiGrid = document.getElementById('emojiGrid');
+    if (!emojiGrid) return;
+    
     emojiGrid.innerHTML = '';
 
     emojiList.forEach(emoji => {
@@ -293,7 +340,8 @@ function populateEmojiGrid() {
         
         emojiItem.addEventListener('click', (e) => {
             e.preventDefault();
-            document.getElementById('btnEmoji').value = emoji;
+            const emojiInput = document.getElementById('btnEmoji');
+            if (emojiInput) emojiInput.value = emoji;
             closeEmojiModal();
         });
 
@@ -305,6 +353,8 @@ function setupColorPicker() {
     const colorPicker = document.getElementById('btnColorPicker');
     const colorHex = document.getElementById('btnColorHex');
     const colorPreview = document.getElementById('colorPreview');
+
+    if (!colorPicker || !colorHex || !colorPreview) return;
 
     colorPicker.addEventListener('input', (e) => {
         const hexColor = e.target.value;
@@ -376,12 +426,16 @@ async function addButton() {
 
 function minimizeWindow() {
     const content = document.getElementById('windowContent');
-    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    if (content) {
+        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
 function maximizeWindow() {
     const container = document.querySelector('.window-container');
     const titleBar = document.getElementById('titleBar');
+    
+    if (!container || !titleBar) return;
     
     isMaximized = !isMaximized;
     
@@ -414,19 +468,25 @@ function closeWindow() {
     const windowContainer = document.querySelector('.window-container');
     const floatingIcon = document.getElementById('floatingIcon');
     
-    windowContainer.style.display = 'none';
-    floatingIcon.style.display = 'flex';
+    if (windowContainer && floatingIcon) {
+        windowContainer.style.display = 'none';
+        floatingIcon.style.display = 'flex';
+    }
 }
 
 function openWindow() {
     const windowContainer = document.querySelector('.window-container');
     const floatingIcon = document.getElementById('floatingIcon');
     
-    windowContainer.style.display = 'block';
-    floatingIcon.style.display = 'none';
+    if (windowContainer && floatingIcon) {
+        windowContainer.style.display = 'block';
+        floatingIcon.style.display = 'none';
+    }
 }
 
 async function initializeMainScreen() {
+    console.log('Inicializando pantalla principal');
+    
     const buttons = await loadButtonsFromSupabase();
     renderButtons(buttons);
     
@@ -446,53 +506,62 @@ async function initializeMainScreen() {
     const addSection = document.getElementById('addSection');
     const floatingIcon = document.getElementById('floatingIcon');
 
-    minBtn.onclick = null;
-    maxBtn.onclick = null;
-    closeBtn.onclick = null;
-    logoutBtn.onclick = null;
+    // Limpiar listeners antiguos
+    if (minBtn) minBtn.onclick = null;
+    if (maxBtn) maxBtn.onclick = null;
+    if (closeBtn) closeBtn.onclick = null;
+    if (logoutBtn) logoutBtn.onclick = null;
 
-    minBtn.addEventListener('click', minimizeWindow);
-    maxBtn.addEventListener('click', maximizeWindow);
-    closeBtn.addEventListener('click', closeWindow);
-    logoutBtn.addEventListener('click', handleLogout);
+    // Agregar nuevos listeners
+    if (minBtn) minBtn.addEventListener('click', minimizeWindow);
+    if (maxBtn) maxBtn.addEventListener('click', maximizeWindow);
+    if (closeBtn) closeBtn.addEventListener('click', closeWindow);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
-    expandAddBtn.addEventListener('click', toggleAddSection);
-    addBtn.addEventListener('click', addButton);
-    cancelBtn.addEventListener('click', toggleAddSection);
+    if (expandAddBtn) expandAddBtn.addEventListener('click', toggleAddSection);
+    if (addBtn) addBtn.addEventListener('click', addButton);
+    if (cancelBtn) cancelBtn.addEventListener('click', toggleAddSection);
 
-    emojiSelectorBtn.addEventListener('click', toggleEmojiModal);
+    if (emojiSelectorBtn) emojiSelectorBtn.addEventListener('click', toggleEmojiModal);
 
-    floatingIcon.addEventListener('click', openWindow);
+    if (floatingIcon) floatingIcon.addEventListener('click', openWindow);
 
-    document.addEventListener('click', (e) => {
-        if (!addSection.contains(e.target) && emojiModal.style.display === 'block') {
-            closeEmojiModal();
-        }
-    });
+    if (addSection && emojiModal) {
+        document.addEventListener('click', (e) => {
+            if (!addSection.contains(e.target) && emojiModal.style.display === 'block') {
+                closeEmojiModal();
+            }
+        });
+    }
 
-    titleBar.addEventListener('mousedown', (e) => {
-        if (isMaximized) return;
-        
-        isDragging = true;
-        const rect = windowContainer.getBoundingClientRect();
-        offset.x = e.clientX - rect.left;
-        offset.y = e.clientY - rect.top;
-    });
+    // Drag de ventana
+    if (titleBar && windowContainer) {
+        titleBar.addEventListener('mousedown', (e) => {
+            if (isMaximized) return;
+            
+            isDragging = true;
+            const rect = windowContainer.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+        });
 
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging && !isMaximized) {
-            windowContainer.style.position = 'fixed';
-            windowContainer.style.left = (e.clientX - offset.x) + 'px';
-            windowContainer.style.top = (e.clientY - offset.y) + 'px';
-        }
-    });
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && !isMaximized) {
+                windowContainer.style.position = 'fixed';
+                windowContainer.style.left = (e.clientX - offset.x) + 'px';
+                windowContainer.style.top = (e.clientY - offset.y) + 'px';
+            }
+        });
 
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM cargado');
+    
     // Inicializar Supabase
     initSupabase();
 
@@ -501,15 +570,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
 
-    loginBtn.addEventListener('click', handleLogin);
+    if (loginBtn) loginBtn.addEventListener('click', handleLogin);
     
-    loginUsername.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') loginPassword.focus();
-    });
+    if (loginUsername) {
+        loginUsername.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (loginPassword) loginPassword.focus();
+            }
+        });
+    }
     
-    loginPassword.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
+    if (loginPassword) {
+        loginPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    }
 
-    loginUsername.focus();
+    if (loginUsername) loginUsername.focus();
+    
+    console.log('Event listeners agregados');
 });
