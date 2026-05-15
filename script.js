@@ -1,5 +1,4 @@
 // ========== CONFIGURACIÓN SUPABASE ==========
-// REEMPLAZA CON TUS DATOS DE SUPABASE
 const SUPABASE_URL = 'https://hxdexehhsrrwjnjmhbxa.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
 
@@ -16,14 +15,6 @@ function initSupabase() {
         console.error('Error inicializando Supabase:', error);
     }
 }
-
-// Credenciales correctas
-const VALID_USERS = [
-   { username: 'Omega_25', password: 'Lemos2014' },
-    { username: 'Dax733', password: 'Leon69' },
-    { username: 'usuario2', password: 'contr4ceña2' }
-
-];
 
 // Lista de emojis disponibles
 const emojiList = [
@@ -73,6 +64,124 @@ let offset = { x: 0, y: 0 };
 let isLoggedIn = false;
 let currentUser = null;
 let currentButtons = [];
+
+// ========== FUNCIONES DE USUARIOS ==========
+
+// Validar contraseña (requisitos mínimos)
+function validatePassword(password) {
+    if (password.length < 6) {
+        return 'La contraseña debe tener al menos 6 caracteres';
+    }
+    return null;
+}
+
+// Validar usuario
+function validateUsername(username) {
+    if (username.length < 3) {
+        return 'El usuario debe tener al menos 3 caracteres';
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return 'El usuario solo puede contener letras, números y guiones bajos';
+    }
+    return null;
+}
+
+// Registrar nuevo usuario
+async function registerUser(username, password, email = '') {
+    try {
+        // Validar
+        const usernameError = validateUsername(username);
+        if (usernameError) {
+            alert(usernameError);
+            return false;
+        }
+
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            alert(passwordError);
+            return false;
+        }
+
+        if (!supabaseClient) {
+            alert('Servidor no disponible. Intenta más tarde.');
+            return false;
+        }
+
+        // Verificar si el usuario ya existe
+        const { data: existingUser, error: checkError } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .single();
+
+        if (existingUser) {
+            alert('Este usuario ya existe');
+            return false;
+        }
+
+        // Crear usuario
+        const { data, error } = await supabaseClient
+            .from('users')
+            .insert([{
+                username: username,
+                password: btoa(password), // Codificar en base64 (no es seguro para producción)
+                email: email
+            }])
+            .select();
+
+        if (error) {
+            console.error('Error al registrar:', error);
+            alert('Error al registrar el usuario');
+            return false;
+        }
+
+        console.log('Usuario registrado:', data);
+        alert('¡Usuario registrado correctamente! Ahora puedes iniciar sesión.');
+        return true;
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al registrar el usuario');
+        return false;
+    }
+}
+
+// Validar usuario desde Supabase
+async function validateLoginFromSupabase(username, password) {
+    try {
+        if (!supabaseClient) {
+            console.log('Supabase no disponible');
+            return null;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .single();
+
+        if (error || !data) {
+            console.log('Usuario no encontrado');
+            return null;
+        }
+
+        // Comparar contraseña
+        const encodedPassword = btoa(password);
+        if (data.password === encodedPassword) {
+            return {
+                id: data.id,
+                username: data.username,
+                email: data.email
+            };
+        }
+
+        return null;
+
+    } catch (error) {
+        console.error('Error validando usuario:', error);
+        return null;
+    }
+}
 
 // ========== FUNCIONES DE SINCRONIZACIÓN ==========
 function updateSyncStatus(message, type = 'success') {
@@ -158,7 +267,6 @@ async function saveButtonToSupabase(button) {
         console.error('Error al guardar:', error);
         updateSyncStatus('❌ Error al guardar', 'error');
         
-        // Guardar en localStorage como respaldo
         const saved = localStorage.getItem('portalButtons') || '[]';
         const buttons = JSON.parse(saved);
         buttons.push(button);
@@ -191,10 +299,6 @@ async function deleteButtonFromSupabase(buttonId) {
 }
 
 // ========== FUNCIONES DE AUTENTICACIÓN ==========
-function validateLogin(username, password) {
-    const user = VALID_USERS.find(u => u.username === username && u.password === password);
-    return user;
-}
 
 function handleLogin() {
     const username = document.getElementById('loginUsername').value.trim();
@@ -213,23 +317,74 @@ function handleLogin() {
         return;
     }
 
-    const validUser = validateLogin(username, password);
-    
-    if (validUser) {
-        console.log('Login exitoso para:', username);
-        isLoggedIn = true;
-        currentUser = validUser.username;
-        message.textContent = '';
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainScreen').style.display = 'flex';
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        initializeMainScreen();
-    } else {
-        console.log('Login fallido');
-        message.textContent = 'Usuario o contraseña incorrectos';
-        document.getElementById('loginPassword').value = '';
+    // Validar desde Supabase
+    validateLoginFromSupabase(username, password).then(validUser => {
+        if (validUser) {
+            console.log('Login exitoso para:', username);
+            isLoggedIn = true;
+            currentUser = validUser.username;
+            message.textContent = '';
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainScreen').style.display = 'flex';
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            initializeMainScreen();
+        } else {
+            console.log('Login fallido');
+            message.textContent = 'Usuario o contraseña incorrectos';
+            document.getElementById('loginPassword').value = '';
+        }
+    });
+}
+
+function handleRegister() {
+    const username = document.getElementById('registerUsername').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const confirmPassword = document.getElementById('registerConfirmPassword').value;
+    const email = document.getElementById('registerEmail').value.trim();
+    const message = document.getElementById('registerMessage');
+
+    if (!username || !password || !confirmPassword) {
+        message.textContent = 'Por favor completa todos los campos';
+        message.style.color = '#c41e3a';
+        return;
     }
+
+    if (password !== confirmPassword) {
+        message.textContent = 'Las contraseñas no coinciden';
+        message.style.color = '#c41e3a';
+        return;
+    }
+
+    registerUser(username, password, email).then(success => {
+        if (success) {
+            document.getElementById('registerUsername').value = '';
+            document.getElementById('registerPassword').value = '';
+            document.getElementById('registerConfirmPassword').value = '';
+            document.getElementById('registerEmail').value = '';
+            
+            // Cambiar a login
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerMessage').textContent = '';
+        }
+    });
+}
+
+function toggleRegisterForm() {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+
+    if (loginForm.style.display === 'none') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    }
+
+    document.getElementById('loginMessage').textContent = '';
+    document.getElementById('registerMessage').textContent = '';
 }
 
 function handleLogout() {
@@ -417,7 +572,6 @@ async function addButton() {
 
     toggleAddSection();
     
-    // Recargar botones
     const buttons = await loadButtonsFromSupabase();
     renderButtons(buttons);
     
@@ -506,13 +660,11 @@ async function initializeMainScreen() {
     const addSection = document.getElementById('addSection');
     const floatingIcon = document.getElementById('floatingIcon');
 
-    // Limpiar listeners antiguos
     if (minBtn) minBtn.onclick = null;
     if (maxBtn) maxBtn.onclick = null;
     if (closeBtn) closeBtn.onclick = null;
     if (logoutBtn) logoutBtn.onclick = null;
 
-    // Agregar nuevos listeners
     if (minBtn) minBtn.addEventListener('click', minimizeWindow);
     if (maxBtn) maxBtn.addEventListener('click', maximizeWindow);
     if (closeBtn) closeBtn.addEventListener('click', closeWindow);
@@ -534,7 +686,6 @@ async function initializeMainScreen() {
         });
     }
 
-    // Drag de ventana
     if (titleBar && windowContainer) {
         titleBar.addEventListener('mousedown', (e) => {
             if (isMaximized) return;
@@ -562,15 +713,20 @@ async function initializeMainScreen() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM cargado');
     
-    // Inicializar Supabase
     initSupabase();
 
     // Setup login
     const loginBtn = document.getElementById('loginBtn');
+    const registerToggleBtn = document.getElementById('registerToggleBtn');
+    const loginBackBtn = document.getElementById('loginBackBtn');
+    const registerBtn = document.getElementById('registerBtn');
     const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
 
     if (loginBtn) loginBtn.addEventListener('click', handleLogin);
+    if (registerToggleBtn) registerToggleBtn.addEventListener('click', toggleRegisterForm);
+    if (loginBackBtn) loginBackBtn.addEventListener('click', toggleRegisterForm);
+    if (registerBtn) registerBtn.addEventListener('click', handleRegister);
     
     if (loginUsername) {
         loginUsername.addEventListener('keypress', (e) => {
