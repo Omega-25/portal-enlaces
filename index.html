@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="<html lang="es">">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Pagina Personal</title>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Menú estilo Windows</title>
+
+    <!-- Conexión al CSS -->
+    <link rel="stylesheet" href="style.css">
+</head><link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Enlaces - Windows 7 Style</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="desktop-background"></div>
+    
+    <!-- PANTALLA DE LOGIN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-window">
+            <div class="login-title-bar">
+                <div class="login-title-text">Iniciar Sesión</div>
+            </div>
+            <div class="login-content">
+                <div class="login-icon">🔐</div>
+                <div class="login-form">
+                    <div class="login-form-group">
+                        <label for="loginUsername">Usuario:</label>
+                        <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autofocus>
+                    </div>
+                    <div class="login-form-group">
+                        <label for="loginPassword">Contraseña:</label>
+                        <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña">
+                    </div>
+                    <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
+                    <div class="login-message" id="loginMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div id="mainScreen" class="main-screen" style="display: none;">
+        <!-- Ícono flotante para reapertura -->
+        <div class="floating-icon" id="floatingIcon" style="display: none;">
+            <div class="icon-tooltip">Abrir Portal</div>
+        </div>
+
+        <div class="window-container" id="windowContainer">
+            <!-- Barra de título -->
+            <div class="title-bar" id="titleBar">
+                <div class="title-text">Portal de Enlaces</div>
+                <div class="window-buttons">
+                    <button class="min-btn" id="minBtn">_</button>
+                    <button class="max-btn" id="maxBtn">□</button>
+                    <button class="logout-btn" id="logoutBtn" title="Cerrar sesión">🚪</button>
+                    <button class="close-btn" id="closeBtn">✕</button>
+                </div>
+            </div>
+
+            <!-- Contenido de la ventana -->
+            <div class="window-content" id="windowContent">
+                <div class="sync-status" id="syncStatus">🔄 Sincronizando...</div>
+                <div class="buttons-grid" id="buttonsGrid">
+                    <!-- Los botones se generarán desde JavaScript -->
+                </div>
+
+                <!-- Botón para expandir la sección de agregar -->
+                <button class="expand-add-btn" id="expandAddBtn">
+                    ➕ Agregar Nuevo Enlace
+                </button>
+
+                <!-- Sección para agregar nuevos botones (minimizada por defecto) -->
+                <div class="add-button-section" id="addSection" style="display: none;">
+                    <div class="form-group">
+                        <label for="btnName">Nombre del botón:</label>
+                        <input type="text" id="btnName" placeholder="Ej: Google">
+                    </div>
+                    <div class="form-group">
+                        <label for="btnUrl">URL:</label>
+                        <input type="text" id="btnUrl" placeholder="Ej: https://google.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="btnEmoji">Emoticono:</label>
+                        <div class="emoji-picker-container">
+                            <input type="text" id="btnEmoji" placeholder="🔗" maxlength="2" value="🔗">
+                            <button class="emoji-selector-btn" id="emojiSelectorBtn">Seleccionar</button>
+                        </div>
+                        <!-- Modal de selector de emojis -->
+                        <div class="emoji-modal" id="emojiModal" style="display: none;">
+                            <div class="emoji-grid" id="emojiGrid"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="btnColor">Color del botón:</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="btnColorPicker" value="#5b9cde" title="Selecciona un color">
+                            <input type="text" id="btnColorHex" placeholder="#5b9cde" maxlength="7">
+                            <span class="color-preview" id="colorPreview"></span>
+                        </div>
+                    </div>
+                    <button class="add-btn" id="addBtn">✓ Agregar Botón</button>
+                    <button class="cancel-btn" id="cancelBtn">✕ Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
