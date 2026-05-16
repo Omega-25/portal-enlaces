@@ -4,7 +4,6 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
 
 let supabaseClient = null;
 
-// Inicializar Supabase
 function initSupabase() {
     try {
         if (window.supabase && window.supabase.createClient) {
@@ -16,7 +15,6 @@ function initSupabase() {
     }
 }
 
-// Lista de emojis disponibles
 const emojiList = [
     '🔍', '🌐', '📱', '💻', '⚙️', '🔧', '🛠️', '📝', '📄', '📋',
     '📊', '📈', '📉', '💼', '🎯', '🎨', '🎭', '🎪', '🎬', '🎸',
@@ -47,7 +45,6 @@ const emojiList = [
     '❤️‍🔥', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '👋'
 ];
 
-// Datos de botones por defecto
 const defaultButtons = [
     { name: 'Google', url: 'https://www.google.com', color: '#5b9cde', icon: '🔍' },
     { name: 'GitHub', url: 'https://github.com', color: '#b896ff', icon: '🐙' },
@@ -57,12 +54,10 @@ const defaultButtons = [
     { name: 'Discord', url: 'https://discord.com', color: '#5b9cde', icon: '💬' }
 ];
 
-// Estado
 let isMaximized = false;
 let isDragging = false;
 let offset = { x: 0, y: 0 };
 let isLoggedIn = false;
-let isAdmin = false;
 let currentUser = null;
 let currentButtons = [];
 
@@ -120,26 +115,18 @@ async function registerUser(username, password, email = '') {
             return false;
         }
 
-        // Verificar si hay solicitud pendiente
-        const { data: existingRequest } = await supabaseClient
-            .from('registration_requests')
-            .select('id')
-            .eq('username', username)
-            .eq('status', 'pending')
-            .single();
+        // Codificar contraseña en base64
+        const encodedPassword = btoa(password);
 
-        if (existingRequest) {
-            alert('Ya tiene una solicitud de registro pendiente');
-            return false;
-        }
-
-        // Crear solicitud de registro en lugar de usuario directo
+        // CREAR USUARIO DIRECTAMENTE EN LA TABLA USERS
+        // con approved = false (pendiente de aprobación)
         const { data, error } = await supabaseClient
-            .from('registration_requests')
+            .from('users')
             .insert([{
                 username: username,
+                password: encodedPassword,
                 email: email,
-                status: 'pending'
+                approved: false  // Pendiente de aprobación
             }])
             .select();
 
@@ -149,8 +136,8 @@ async function registerUser(username, password, email = '') {
             return false;
         }
 
-        console.log('Solicitud de registro creada:', data);
-        alert('¡Solicitud de registro enviada! Espera la aprobación del administrador.');
+        console.log('Usuario creado:', data);
+        alert('¡Usuario registrado correctamente!\n\n⏳ Espera a que el administrador apruebe tu cuenta.');
         return true;
 
     } catch (error) {
@@ -194,7 +181,7 @@ async function validateLoginFromSupabase(username, password) {
 
         // Verificar si el usuario está aprobado
         if (!data.approved) {
-            alert('Tu cuenta no ha sido aprobada aún. Por favor, espera la aprobación del administrador.');
+            alert('⏳ Tu cuenta está pendiente de aprobación.\n\nEspera a que el administrador la revise.');
             return null;
         }
 
@@ -212,55 +199,6 @@ async function validateLoginFromSupabase(username, password) {
 
     } catch (error) {
         console.error('Error validando usuario:', error);
-        return null;
-    }
-}
-
-// Validar admin
-async function validateAdmin(username, password) {
-    try {
-        console.log('Validando admin:', username);
-
-        if (!supabaseClient) {
-            const admins = JSON.parse(localStorage.getItem('admins') || '[]');
-            const admin = admins.find(a => a.username === username);
-            
-            if (!admin) return null;
-
-            const encodedPassword = btoa(password);
-            if (admin.password === encodedPassword) {
-                return {
-                    username: admin.username,
-                    email: admin.email || ''
-                };
-            }
-            return null;
-        }
-
-        const { data, error } = await supabaseClient
-            .from('admins')
-            .select('*')
-            .eq('username', username)
-            .single();
-
-        if (error || !data) {
-            console.log('Admin no encontrado');
-            return null;
-        }
-
-        const encodedPassword = btoa(password);
-        if (data.password === encodedPassword) {
-            return {
-                id: data.id,
-                username: data.username,
-                email: data.email || ''
-            };
-        }
-
-        return null;
-
-    } catch (error) {
-        console.error('Error validando admin:', error);
         return null;
     }
 }
@@ -291,7 +229,6 @@ function handleLogin() {
         if (validUser) {
             console.log('Login exitoso para:', usernameValue);
             isLoggedIn = true;
-            isAdmin = false;
             currentUser = validUser.username;
             message.textContent = '';
             document.getElementById('loginScreen').style.display = 'none';
@@ -305,58 +242,6 @@ function handleLogin() {
             password.value = '';
         }
     });
-}
-
-function handleAdminLogin() {
-    const username = document.getElementById('adminUsername');
-    const password = document.getElementById('adminPassword');
-    const message = document.getElementById('adminMessage');
-
-    if (!username || !password || !message) return;
-
-    const usernameValue = username.value.trim();
-    const passwordValue = password.value;
-
-    if (!usernameValue || !passwordValue) {
-        message.textContent = 'Completa todos los campos';
-        return;
-    }
-
-    validateAdmin(usernameValue, passwordValue).then(validAdmin => {
-        if (validAdmin) {
-            console.log('Admin login exitoso:', usernameValue);
-            isLoggedIn = true;
-            isAdmin = true;
-            currentUser = validAdmin.username;
-            message.textContent = '';
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('adminScreen').style.display = 'flex';
-            username.value = '';
-            password.value = '';
-            loadRegistrationRequests();
-        } else {
-            message.textContent = 'Admin o contraseña incorrectos';
-            password.value = '';
-        }
-    });
-}
-
-function toggleAdminMode() {
-    const loginForm = document.getElementById('loginForm');
-    const adminForm = document.getElementById('adminForm');
-
-    if (!loginForm || !adminForm) return;
-
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        adminForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        adminForm.style.display = 'block';
-    }
-
-    document.getElementById('loginMessage').textContent = '';
-    document.getElementById('adminMessage').textContent = '';
 }
 
 function toggleRegisterForm() {
@@ -420,131 +305,15 @@ async function handleRegister() {
     }
 }
 
-// ========== FUNCIONES DE ADMINISTRACIÓN ==========
-
-async function loadRegistrationRequests() {
-    try {
-        if (!supabaseClient) {
-            alert('Servidor no disponible');
-            return;
-        }
-
-        const { data, error } = await supabaseClient
-            .from('registration_requests')
-            .select('*')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        displayRegistrationRequests(data || []);
-
-    } catch (error) {
-        console.error('Error cargando solicitudes:', error);
-        alert('Error al cargar las solicitudes');
-    }
-}
-
-function displayRegistrationRequests(requests) {
-    const container = document.getElementById('requestsContainer');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (requests.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 20px;">No hay solicitudes pendientes</p>';
-        return;
-    }
-
-    requests.forEach(request => {
-        const requestDiv = document.createElement('div');
-        requestDiv.className = 'request-item';
-        requestDiv.innerHTML = `
-            <div class="request-info">
-                <h3>👤 ${request.username}</h3>
-                <p>📧 ${request.email || 'Sin email'}</p>
-                <p>📅 ${new Date(request.created_at).toLocaleDateString()}</p>
-            </div>
-            <div class="request-actions">
-                <button class="approve-btn" onclick="approveUser('${request.username}')">✓ Aprobar</button>
-                <button class="reject-btn" onclick="rejectUser('${request.username}')">✕ Rechazar</button>
-            </div>
-        `;
-        container.appendChild(requestDiv);
-    });
-}
-
-async function approveUser(username) {
-    try {
-        if (!confirm(`¿Aprobar a ${username}?`)) return;
-
-        if (!supabaseClient) {
-            alert('Servidor no disponible');
-            return;
-        }
-
-        // Crear usuario aprobado
-        const { data, error } = await supabaseClient
-            .from('users')
-            .insert([{
-                username: username,
-                password: btoa('provisional123'), // Contraseña temporal
-                email: '',
-                approved: true,
-                approved_at: new Date().toISOString()
-            }])
-            .select();
-
-        if (error) throw error;
-
-        // Actualizar solicitud como aprobada
-        await supabaseClient
-            .from('registration_requests')
-            .update({
-                status: 'approved',
-                reviewed_at: new Date().toISOString(),
-                reviewed_by: currentUser
-            })
-            .eq('username', username);
-
-        alert(`Usuario ${username} aprobado exitosamente`);
-        loadRegistrationRequests();
-
-    } catch (error) {
-        console.error('Error aprobando usuario:', error);
-        alert('Error al aprobar usuario');
-    }
-}
-
-async function rejectUser(username) {
-    try {
-        const notes = prompt('¿Motivo del rechazo?');
-        if (notes === null) return;
-
-        if (!supabaseClient) {
-            alert('Servidor no disponible');
-            return;
-        }
-
-        // Actualizar solicitud como rechazada
-        const { error } = await supabaseClient
-            .from('registration_requests')
-            .update({
-                status: 'rejected',
-                reviewed_at: new Date().toISOString(),
-                reviewed_by: currentUser,
-                admin_notes: notes
-            })
-            .eq('username', username);
-
-        if (error) throw error;
-
-        alert(`Usuario ${username} rechazado`);
-        loadRegistrationRequests();
-
-    } catch (error) {
-        console.error('Error rechazando usuario:', error);
-        alert('Error al rechazar usuario');
+function handleLogout() {
+    if (confirm('¿Deseas cerrar sesión?')) {
+        isLoggedIn = false;
+        currentUser = null;
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginUsername').focus();
     }
 }
 
@@ -900,20 +669,6 @@ function openWindow() {
     }
 }
 
-function handleLogout() {
-    if (confirm('¿Deseas cerrar sesión?')) {
-        isLoggedIn = false;
-        isAdmin = false;
-        currentUser = null;
-        document.getElementById('mainScreen').style.display = 'none';
-        document.getElementById('adminScreen').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('loginUsername').focus();
-    }
-}
-
 async function initializeMainScreen() {
     console.log('Inicializando pantalla principal para:', currentUser);
     
@@ -992,16 +747,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     initSupabase();
 
-    // Setup login
     const loginBtn = document.getElementById('loginBtn');
     const registerToggleBtn = document.getElementById('registerToggleBtn');
     const loginBackBtn = document.getElementById('loginBackBtn');
     const registerBtn = document.getElementById('registerBtn');
-    const adminToggleBtn = document.getElementById('adminToggleBtn');
-    const adminLoginBtn = document.getElementById('adminLoginBtn');
-    const adminBackBtn = document.getElementById('adminBackBtn');
-    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
-
     const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
 
@@ -1030,34 +779,6 @@ document.addEventListener('DOMContentLoaded', function() {
         registerBtn.addEventListener('click', function(e) {
             e.preventDefault();
             handleRegister();
-        });
-    }
-
-    if (adminToggleBtn) {
-        adminToggleBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleAdminMode();
-        });
-    }
-
-    if (adminLoginBtn) {
-        adminLoginBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            handleAdminLogin();
-        });
-    }
-
-    if (adminBackBtn) {
-        adminBackBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            toggleAdminMode();
-        });
-    }
-
-    if (adminLogoutBtn) {
-        adminLogoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            handleLogout();
         });
     }
     
