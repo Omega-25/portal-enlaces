@@ -33,7 +33,7 @@
 <div id="loginScreen" class="login-screen">
     <div class="login-window">
         <div class="login-title-bar">
-            <div class="login-title-text">Iniciar Sesión</div>
+            <div class="login-title-text">Portal de Enlaces - Iniciar Sesión</div>
         </div>
         <div class="login-content">
             <div class="login-icon">🔐</div>
@@ -50,6 +50,7 @@
                 </div>
                 <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
                 <button type="button" class="register-toggle-btn" id="registerToggleBtn">¿No tienes cuenta? Regístrate</button>
+                <button type="button" class="register-toggle-btn" id="adminToggleBtn" style="background: linear-gradient(135deg, #ff6b6b, #ff4444); margin-top: 5px;">👮 Acceso Admin</button>
                 <div class="login-message" id="loginMessage"></div>
             </div>
 
@@ -60,7 +61,7 @@
                     <input type="text" id="registerUsername" placeholder="Elige un usuario">
                 </div>
                 <div class="login-form-group">
-                    <label for="registerEmail">Email (opcional):</label>
+                    <label for="registerEmail">Email:</label>
                     <input type="email" id="registerEmail" placeholder="tu@email.com">
                 </div>
                 <div class="login-form-group">
@@ -71,9 +72,41 @@
                     <label for="registerConfirmPassword">Confirmar Contraseña:</label>
                     <input type="password" id="registerConfirmPassword" placeholder="Repite tu contraseña">
                 </div>
-                <button class="login-btn" id="registerBtn">Registrarse</button>
+                <p style="font-size: 11px; color: #666; margin: 10px 0;">Tu solicitud será revisada por un administrador</p>
+                <button class="login-btn" id="registerBtn">Solicitar Registro</button>
                 <button type="button" class="register-toggle-btn" id="loginBackBtn">Volver al login</button>
                 <div class="login-message" id="registerMessage"></div>
+            </div>
+
+            <!-- FORMULARIO DE ADMIN -->
+            <div class="login-form" id="adminForm" style="display: none;">
+                <div class="login-form-group">
+                    <label for="adminUsername">Usuario Admin:</label>
+                    <input type="text" id="adminUsername" placeholder="Usuario administrador">
+                </div>
+                <div class="login-form-group">
+                    <label for="adminPassword">Contraseña:</label>
+                    <input type="password" id="adminPassword" placeholder="Contraseña de admin">
+                </div>
+                <button class="login-btn" id="adminLoginBtn" style="background: linear-gradient(135deg, #ff6b6b, #ff4444);">👮 Entrar como Admin</button>
+                <button type="button" class="register-toggle-btn" id="adminBackBtn">Volver al login</button>
+                <div class="login-message" id="adminMessage"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PANTALLA ADMIN -->
+<div id="adminScreen" class="admin-screen" style="display: none;">
+    <div class="admin-window">
+        <div class="admin-title-bar">
+            <div class="admin-title-text">👮 Panel de Administración - Portal de Enlaces</div>
+            <button class="admin-logout-btn" id="adminLogoutBtn">🚪 Cerrar Sesión</button>
+        </div>
+        <div class="admin-content">
+            <h2>Solicitudes de Registro Pendientes</h2>
+            <div id="requestsContainer" class="requests-container">
+                <p>Cargando solicitudes...</p>
             </div>
         </div>
     </div>
