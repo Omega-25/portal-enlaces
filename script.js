@@ -62,12 +62,12 @@ let isMaximized = false;
 let isDragging = false;
 let offset = { x: 0, y: 0 };
 let isLoggedIn = false;
+let isAdmin = false;
 let currentUser = null;
 let currentButtons = [];
 
 // ========== FUNCIONES DE VALIDACIÓN ==========
 
-// Validar contraseña (requisitos mínimos)
 function validatePassword(password) {
     if (password.length < 6) {
         return 'La contraseña debe tener al menos 6 caracteres';
@@ -75,7 +75,6 @@ function validatePassword(password) {
     return null;
 }
 
-// Validar usuario
 function validateUsername(username) {
     if (username.length < 3) {
         return 'El usuario debe tener al menos 3 caracteres';
@@ -88,12 +87,10 @@ function validateUsername(username) {
 
 // ========== FUNCIONES DE USUARIOS ==========
 
-// Registrar nuevo usuario
 async function registerUser(username, password, email = '') {
     try {
         console.log('Registrando usuario:', username);
 
-        // Validar
         const usernameError = validateUsername(username);
         if (usernameError) {
             alert(usernameError);
@@ -107,30 +104,12 @@ async function registerUser(username, password, email = '') {
         }
 
         if (!supabaseClient) {
-            console.log('Supabase no disponible, guardando en localStorage');
-            
-            // Guardar en localStorage como respaldo
-            let users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
-            
-            // Verificar si el usuario ya existe
-            if (users.find(u => u.username === username)) {
-                alert('Este usuario ya existe');
-                return false;
-            }
-            
-            users.push({
-                username: username,
-                password: btoa(password),
-                email: email
-            });
-            
-            localStorage.setItem('portalUsers', JSON.stringify(users));
-            alert('¡Usuario registrado correctamente! Ahora puedes iniciar sesión.');
-            return true;
+            alert('Servidor no disponible. Intenta más tarde.');
+            return false;
         }
 
         // Verificar si el usuario ya existe
-        const { data: existingUser, error: checkError } = await supabaseClient
+        const { data: existingUser } = await supabaseClient
             .from('users')
             .select('id')
             .eq('username', username)
@@ -141,58 +120,64 @@ async function registerUser(username, password, email = '') {
             return false;
         }
 
-        // Crear usuario
+        // Verificar si hay solicitud pendiente
+        const { data: existingRequest } = await supabaseClient
+            .from('registration_requests')
+            .select('id')
+            .eq('username', username)
+            .eq('status', 'pending')
+            .single();
+
+        if (existingRequest) {
+            alert('Ya tiene una solicitud de registro pendiente');
+            return false;
+        }
+
+        // Crear solicitud de registro en lugar de usuario directo
         const { data, error } = await supabaseClient
-            .from('users')
+            .from('registration_requests')
             .insert([{
                 username: username,
-                password: btoa(password),
-                email: email
+                email: email,
+                status: 'pending'
             }])
             .select();
 
         if (error) {
             console.error('Error al registrar:', error);
-            alert('Error al registrar el usuario. Intenta más tarde.');
+            alert('Error al registrar. Intenta más tarde.');
             return false;
         }
 
-        console.log('Usuario registrado:', data);
-        alert('¡Usuario registrado correctamente! Ahora puedes iniciar sesión.');
+        console.log('Solicitud de registro creada:', data);
+        alert('¡Solicitud de registro enviada! Espera la aprobación del administrador.');
         return true;
 
     } catch (error) {
         console.error('Error:', error);
-        alert('Error al registrar el usuario');
+        alert('Error al registrar');
         return false;
     }
 }
 
-// Validar usuario desde Supabase
 async function validateLoginFromSupabase(username, password) {
     try {
         console.log('Validando login para:', username);
 
-        // Si Supabase no está disponible, usa localStorage
         if (!supabaseClient) {
-            console.log('Supabase no disponible, usando localStorage');
-            
             const users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
             const user = users.find(u => u.username === username);
             
-            if (!user) {
-                console.log('Usuario no encontrado en localStorage');
-                return null;
-            }
+            if (!user) return null;
 
             const encodedPassword = btoa(password);
             if (user.password === encodedPassword) {
                 return {
                     username: user.username,
-                    email: user.email || ''
+                    email: user.email || '',
+                    approved: true
                 };
             }
-
             return null;
         }
 
@@ -207,7 +192,62 @@ async function validateLoginFromSupabase(username, password) {
             return null;
         }
 
-        // Comparar contraseña
+        // Verificar si el usuario está aprobado
+        if (!data.approved) {
+            alert('Tu cuenta no ha sido aprobada aún. Por favor, espera la aprobación del administrador.');
+            return null;
+        }
+
+        const encodedPassword = btoa(password);
+        if (data.password === encodedPassword) {
+            return {
+                id: data.id,
+                username: data.username,
+                email: data.email || '',
+                approved: data.approved
+            };
+        }
+
+        return null;
+
+    } catch (error) {
+        console.error('Error validando usuario:', error);
+        return null;
+    }
+}
+
+// Validar admin
+async function validateAdmin(username, password) {
+    try {
+        console.log('Validando admin:', username);
+
+        if (!supabaseClient) {
+            const admins = JSON.parse(localStorage.getItem('admins') || '[]');
+            const admin = admins.find(a => a.username === username);
+            
+            if (!admin) return null;
+
+            const encodedPassword = btoa(password);
+            if (admin.password === encodedPassword) {
+                return {
+                    username: admin.username,
+                    email: admin.email || ''
+                };
+            }
+            return null;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('admins')
+            .select('*')
+            .eq('username', username)
+            .single();
+
+        if (error || !data) {
+            console.log('Admin no encontrado');
+            return null;
+        }
+
         const encodedPassword = btoa(password);
         if (data.password === encodedPassword) {
             return {
@@ -220,7 +260,7 @@ async function validateLoginFromSupabase(username, password) {
         return null;
 
     } catch (error) {
-        console.error('Error validando usuario:', error);
+        console.error('Error validando admin:', error);
         return null;
     }
 }
@@ -232,15 +272,10 @@ function handleLogin() {
     const password = document.getElementById('loginPassword');
     const message = document.getElementById('loginMessage');
 
-    if (!username || !password || !message) {
-        console.error('Faltan elementos del formulario de login');
-        return;
-    }
+    if (!username || !password || !message) return;
 
     const usernameValue = username.value.trim();
     const passwordValue = password.value;
-
-    console.log('Intento de login:', usernameValue);
 
     if (!usernameValue) {
         message.textContent = 'Por favor ingresa el usuario';
@@ -252,11 +287,11 @@ function handleLogin() {
         return;
     }
 
-    // Validar desde Supabase
     validateLoginFromSupabase(usernameValue, passwordValue).then(validUser => {
         if (validUser) {
             console.log('Login exitoso para:', usernameValue);
             isLoggedIn = true;
+            isAdmin = false;
             currentUser = validUser.username;
             message.textContent = '';
             document.getElementById('loginScreen').style.display = 'none';
@@ -272,25 +307,70 @@ function handleLogin() {
     });
 }
 
+function handleAdminLogin() {
+    const username = document.getElementById('adminUsername');
+    const password = document.getElementById('adminPassword');
+    const message = document.getElementById('adminMessage');
+
+    if (!username || !password || !message) return;
+
+    const usernameValue = username.value.trim();
+    const passwordValue = password.value;
+
+    if (!usernameValue || !passwordValue) {
+        message.textContent = 'Completa todos los campos';
+        return;
+    }
+
+    validateAdmin(usernameValue, passwordValue).then(validAdmin => {
+        if (validAdmin) {
+            console.log('Admin login exitoso:', usernameValue);
+            isLoggedIn = true;
+            isAdmin = true;
+            currentUser = validAdmin.username;
+            message.textContent = '';
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminScreen').style.display = 'flex';
+            username.value = '';
+            password.value = '';
+            loadRegistrationRequests();
+        } else {
+            message.textContent = 'Admin o contraseña incorrectos';
+            password.value = '';
+        }
+    });
+}
+
+function toggleAdminMode() {
+    const loginForm = document.getElementById('loginForm');
+    const adminForm = document.getElementById('adminForm');
+
+    if (!loginForm || !adminForm) return;
+
+    if (loginForm.style.display === 'none') {
+        loginForm.style.display = 'block';
+        adminForm.style.display = 'none';
+    } else {
+        loginForm.style.display = 'none';
+        adminForm.style.display = 'block';
+    }
+
+    document.getElementById('loginMessage').textContent = '';
+    document.getElementById('adminMessage').textContent = '';
+}
+
 function toggleRegisterForm() {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
 
-    if (!loginForm || !registerForm) {
-        console.error('Faltan formularios');
-        return;
-    }
+    if (!loginForm || !registerForm) return;
 
     if (loginForm.style.display === 'none') {
         loginForm.style.display = 'block';
         registerForm.style.display = 'none';
-        const usernameInput = document.getElementById('loginUsername');
-        if (usernameInput) usernameInput.focus();
     } else {
         loginForm.style.display = 'none';
         registerForm.style.display = 'block';
-        const registerUsernameInput = document.getElementById('registerUsername');
-        if (registerUsernameInput) registerUsernameInput.focus();
     }
 
     document.getElementById('loginMessage').textContent = '';
@@ -304,18 +384,13 @@ async function handleRegister() {
     const email = document.getElementById('registerEmail');
     const message = document.getElementById('registerMessage');
 
-    // Verificar que los elementos existen
-    if (!username || !password || !confirmPassword || !email || !message) {
-        console.error('Faltan elementos del formulario de registro');
-        return;
-    }
+    if (!username || !password || !confirmPassword || !email || !message) return;
 
     const usernameValue = username.value.trim();
     const passwordValue = password.value;
     const confirmPasswordValue = confirmPassword.value;
     const emailValue = email.value.trim();
 
-    // Limpiar mensaje anterior
     message.textContent = '';
     message.style.color = '#c41e3a';
 
@@ -329,35 +404,147 @@ async function handleRegister() {
         return;
     }
 
-    // Llamar a la función de registro
     const success = await registerUser(usernameValue, passwordValue, emailValue);
     
     if (success) {
-        // Limpiar campos
         username.value = '';
         password.value = '';
         confirmPassword.value = '';
         email.value = '';
         
-        // Cambiar a login
         document.getElementById('registerForm').style.display = 'none';
         document.getElementById('loginForm').style.display = 'block';
-        const loginUsernameInput = document.getElementById('loginUsername');
-        if (loginUsernameInput) loginUsernameInput.focus();
+        document.getElementById('loginUsername').focus();
         
         message.textContent = '';
     }
 }
 
-function handleLogout() {
-    if (confirm('¿Deseas cerrar sesión?')) {
-        isLoggedIn = false;
-        currentUser = null;
-        document.getElementById('mainScreen').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'flex';
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('loginUsername').focus();
+// ========== FUNCIONES DE ADMINISTRACIÓN ==========
+
+async function loadRegistrationRequests() {
+    try {
+        if (!supabaseClient) {
+            alert('Servidor no disponible');
+            return;
+        }
+
+        const { data, error } = await supabaseClient
+            .from('registration_requests')
+            .select('*')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        displayRegistrationRequests(data || []);
+
+    } catch (error) {
+        console.error('Error cargando solicitudes:', error);
+        alert('Error al cargar las solicitudes');
+    }
+}
+
+function displayRegistrationRequests(requests) {
+    const container = document.getElementById('requestsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (requests.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 20px;">No hay solicitudes pendientes</p>';
+        return;
+    }
+
+    requests.forEach(request => {
+        const requestDiv = document.createElement('div');
+        requestDiv.className = 'request-item';
+        requestDiv.innerHTML = `
+            <div class="request-info">
+                <h3>👤 ${request.username}</h3>
+                <p>📧 ${request.email || 'Sin email'}</p>
+                <p>📅 ${new Date(request.created_at).toLocaleDateString()}</p>
+            </div>
+            <div class="request-actions">
+                <button class="approve-btn" onclick="approveUser('${request.username}')">✓ Aprobar</button>
+                <button class="reject-btn" onclick="rejectUser('${request.username}')">✕ Rechazar</button>
+            </div>
+        `;
+        container.appendChild(requestDiv);
+    });
+}
+
+async function approveUser(username) {
+    try {
+        if (!confirm(`¿Aprobar a ${username}?`)) return;
+
+        if (!supabaseClient) {
+            alert('Servidor no disponible');
+            return;
+        }
+
+        // Crear usuario aprobado
+        const { data, error } = await supabaseClient
+            .from('users')
+            .insert([{
+                username: username,
+                password: btoa('provisional123'), // Contraseña temporal
+                email: '',
+                approved: true,
+                approved_at: new Date().toISOString()
+            }])
+            .select();
+
+        if (error) throw error;
+
+        // Actualizar solicitud como aprobada
+        await supabaseClient
+            .from('registration_requests')
+            .update({
+                status: 'approved',
+                reviewed_at: new Date().toISOString(),
+                reviewed_by: currentUser
+            })
+            .eq('username', username);
+
+        alert(`Usuario ${username} aprobado exitosamente`);
+        loadRegistrationRequests();
+
+    } catch (error) {
+        console.error('Error aprobando usuario:', error);
+        alert('Error al aprobar usuario');
+    }
+}
+
+async function rejectUser(username) {
+    try {
+        const notes = prompt('¿Motivo del rechazo?');
+        if (notes === null) return;
+
+        if (!supabaseClient) {
+            alert('Servidor no disponible');
+            return;
+        }
+
+        // Actualizar solicitud como rechazada
+        const { error } = await supabaseClient
+            .from('registration_requests')
+            .update({
+                status: 'rejected',
+                reviewed_at: new Date().toISOString(),
+                reviewed_by: currentUser,
+                admin_notes: notes
+            })
+            .eq('username', username);
+
+        if (error) throw error;
+
+        alert(`Usuario ${username} rechazado`);
+        loadRegistrationRequests();
+
+    } catch (error) {
+        console.error('Error rechazando usuario:', error);
+        alert('Error al rechazar usuario');
     }
 }
 
@@ -375,7 +562,6 @@ function updateSyncStatus(message, type = 'success') {
 async function loadButtonsFromSupabase() {
     try {
         if (!supabaseClient) {
-            console.log('Supabase no inicializado, usando localStorage');
             const saved = localStorage.getItem('portalButtons');
             return saved ? JSON.parse(saved) : defaultButtons;
         }
@@ -387,13 +573,9 @@ async function loadButtonsFromSupabase() {
             .select('*')
             .order('created_at', { ascending: true });
 
-        if (error) {
-            console.error('Error Supabase:', error);
-            throw error;
-        }
+        if (error) throw error;
 
         if (data && data.length > 0) {
-            console.log('Botones cargados desde Supabase:', data);
             updateSyncStatus('✅ Sincronizado');
             currentButtons = data;
             localStorage.setItem('portalButtons', JSON.stringify(data));
@@ -416,7 +598,6 @@ async function loadButtonsFromSupabase() {
 async function saveButtonToSupabase(button) {
     try {
         if (!supabaseClient) {
-            console.log('Guardando en localStorage');
             const saved = localStorage.getItem('portalButtons') || '[]';
             const buttons = JSON.parse(saved);
             buttons.push(button);
@@ -454,10 +635,7 @@ async function saveButtonToSupabase(button) {
 
 async function deleteButtonFromSupabase(buttonId) {
     try {
-        if (!supabaseClient) {
-            console.log('Eliminando de localStorage');
-            return;
-        }
+        if (!supabaseClient) return;
 
         updateSyncStatus('🔄 Eliminando...', 'syncing');
 
@@ -616,10 +794,7 @@ async function addButton() {
     const emoji = document.getElementById('btnEmoji');
     const color = document.getElementById('btnColorHex');
 
-    if (!name || !url || !emoji || !color) {
-        console.error('Faltan elementos del formulario de botón');
-        return;
-    }
+    if (!name || !url || !emoji || !color) return;
 
     const nameValue = name.value.trim();
     const urlValue = url.value.trim();
@@ -725,6 +900,20 @@ function openWindow() {
     }
 }
 
+function handleLogout() {
+    if (confirm('¿Deseas cerrar sesión?')) {
+        isLoggedIn = false;
+        isAdmin = false;
+        currentUser = null;
+        document.getElementById('mainScreen').style.display = 'none';
+        document.getElementById('adminScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginUsername').focus();
+    }
+}
+
 async function initializeMainScreen() {
     console.log('Inicializando pantalla principal para:', currentUser);
     
@@ -808,19 +997,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const registerToggleBtn = document.getElementById('registerToggleBtn');
     const loginBackBtn = document.getElementById('loginBackBtn');
     const registerBtn = document.getElementById('registerBtn');
+    const adminToggleBtn = document.getElementById('adminToggleBtn');
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminBackBtn = document.getElementById('adminBackBtn');
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+
     const loginUsername = document.getElementById('loginUsername');
     const loginPassword = document.getElementById('loginPassword');
-
-    console.log('Elementos encontrados:');
-    console.log('loginBtn:', loginBtn);
-    console.log('registerToggleBtn:', registerToggleBtn);
-    console.log('loginBackBtn:', loginBackBtn);
-    console.log('registerBtn:', registerBtn);
 
     if (loginBtn) {
         loginBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Click en botón de login');
             handleLogin();
         });
     }
@@ -828,7 +1015,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (registerToggleBtn) {
         registerToggleBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Click en botón toggle registro');
             toggleRegisterForm();
         });
     }
@@ -836,7 +1022,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginBackBtn) {
         loginBackBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Click en botón volver');
             toggleRegisterForm();
         });
     }
@@ -844,8 +1029,35 @@ document.addEventListener('DOMContentLoaded', function() {
     if (registerBtn) {
         registerBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Click en botón registrarse');
             handleRegister();
+        });
+    }
+
+    if (adminToggleBtn) {
+        adminToggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleAdminMode();
+        });
+    }
+
+    if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleAdminLogin();
+        });
+    }
+
+    if (adminBackBtn) {
+        adminBackBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleAdminMode();
+        });
+    }
+
+    if (adminLogoutBtn) {
+        adminLogoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogout();
         });
     }
     
