@@ -50,8 +50,8 @@
                 </div>
                 <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
                 <button type="button" class="register-toggle-btn" id="registerToggleBtn">¿No tienes cuenta? Regístrate</button>
-                <button type="button" class="register-toggle-btn" id="adminToggleBtn" style="background: linear-gradient(135deg, #ff6b6b, #ff4444); margin-top: 5px;">👮 Acceso Admin</button>
                 <div class="login-message" id="loginMessage"></div>
+                <p style="font-size: 10px; color: #999; margin-top: 15px; text-align: center;">👮 Aprobación de cuentas vía Supabase</p>
             </div>
 
             <!-- FORMULARIO DE REGISTRO -->
@@ -72,25 +72,10 @@
                     <label for="registerConfirmPassword">Confirmar Contraseña:</label>
                     <input type="password" id="registerConfirmPassword" placeholder="Repite tu contraseña">
                 </div>
-                <p style="font-size: 11px; color: #666; margin: 10px 0;">Tu solicitud será revisada por un administrador</p>
+                <p style="font-size: 11px; color: #666; margin: 10px 0;">⏳ Tu solicitud será revisada por un administrador</p>
                 <button class="login-btn" id="registerBtn">Solicitar Registro</button>
                 <button type="button" class="register-toggle-btn" id="loginBackBtn">Volver al login</button>
                 <div class="login-message" id="registerMessage"></div>
-            </div>
-
-            <!-- FORMULARIO DE ADMIN -->
-            <div class="login-form" id="adminForm" style="display: none;">
-                <div class="login-form-group">
-                    <label for="adminUsername">Usuario Admin:</label>
-                    <input type="text" id="adminUsername" placeholder="Usuario administrador">
-                </div>
-                <div class="login-form-group">
-                    <label for="adminPassword">Contraseña:</label>
-                    <input type="password" id="adminPassword" placeholder="Contraseña de admin">
-                </div>
-                <button class="login-btn" id="adminLoginBtn" style="background: linear-gradient(135deg, #ff6b6b, #ff4444);">👮 Entrar como Admin</button>
-                <button type="button" class="register-toggle-btn" id="adminBackBtn">Volver al login</button>
-                <div class="login-message" id="adminMessage"></div>
             </div>
         </div>
     </div>
