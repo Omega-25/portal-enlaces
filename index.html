@@ -1,116 +1,173 @@
 <!DOCTYPE html>
+<html lang="en" class="<html lang="es">">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Pagina Personal</title>
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Menú estilo Windows</title>
+
+    <!-- Conexión al CSS -->
+    <link rel="stylesheet" href="style.css">
+</head><link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Enlaces</title>
+    <title>Portal de Enlaces - Windows 7 Style</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <div class="desktop-background"></div>
     
     <!-- PANTALLA DE LOGIN -->
-    <div id="loginScreen" class="login-screen">
-        <div class="login-window">
-            <div class="login-title-bar">Portal de Enlaces - Iniciar Sesión</div>
-            <div class="login-content">
-                <div class="login-icon">🔐</div>
-                
-                <div class="login-form" id="loginForm">
-                    <div class="form-group">
-                        <label>Usuario:</label>
-                        <input type="text" id="loginUsername" placeholder="usuario" autofocus>
-                    </div>
-                    <div class="form-group">
-                        <label>Contraseña:</label>
-                        <input type="password" id="loginPassword" placeholder="contraseña">
-                    </div>
-                    <button id="loginBtn" class="btn-login">Iniciar Sesión</button>
-                    <button id="registerToggleBtn" class="btn-register">¿No tienes cuenta? Regístrate</button>
-                    <div id="loginMessage" class="message"></div>
+<div id="loginScreen" class="login-screen">
+    <div class="login-window">
+        <div class="login-title-bar">
+            <div class="login-title-text">Portal de Enlaces - Iniciar Sesión</div>
+        </div>
+        <div class="login-content">
+            <div class="login-icon">🔐</div>
+            
+            <!-- FORMULARIO DE LOGIN -->
+            <div class="login-form" id="loginForm">
+                <div class="login-form-group">
+                    <label for="loginUsername">Usuario:</label>
+                    <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autofocus>
                 </div>
+                <div class="login-form-group">
+                    <label for="loginPassword">Contraseña:</label>
+                    <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña">
+                </div>
+                <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
+                <button type="button" class="register-toggle-btn" id="registerToggleBtn">¿No tienes cuenta? Regístrate</button>
+                <div class="login-message" id="loginMessage"></div>
+                <p style="font-size: 10px; color: #999; margin-top: 15px; text-align: center;">👮 Aprobación de cuentas vía Supabase</p>
+            </div>
 
-                <div class="login-form" id="registerForm" style="display: none;">
-                    <div class="form-group">
-                        <label>Usuario:</label>
-                        <input type="text" id="registerUsername" placeholder="usuario">
-                    </div>
-                    <div class="form-group">
-                        <label>Email:</label>
-                        <input type="email" id="registerEmail" placeholder="email@ejemplo.com">
-                    </div>
-                    <div class="form-group">
-                        <label>Contraseña:</label>
-                        <input type="password" id="registerPassword" placeholder="contraseña">
-                    </div>
-                    <div class="form-group">
-                        <label>Confirmar:</label>
-                        <input type="password" id="registerConfirmPassword" placeholder="confirmar">
-                    </div>
-                    <button id="registerBtn" class="btn-login">Registrarse</button>
-                    <button id="loginBackBtn" class="btn-register">Volver al login</button>
-                    <div id="registerMessage" class="message"></div>
+            <!-- FORMULARIO DE REGISTRO -->
+            <div class="login-form" id="registerForm" style="display: none;">
+                <div class="login-form-group">
+                    <label for="registerUsername">Usuario:</label>
+                    <input type="text" id="registerUsername" placeholder="Elige un usuario">
                 </div>
+                <div class="login-form-group">
+                    <label for="registerEmail">Email:</label>
+                    <input type="email" id="registerEmail" placeholder="tu@email.com">
+                </div>
+                <div class="login-form-group">
+                    <label for="registerPassword">Contraseña:</label>
+                    <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="login-form-group">
+                    <label for="registerConfirmPassword">Confirmar Contraseña:</label>
+                    <input type="password" id="registerConfirmPassword" placeholder="Repite tu contraseña">
+                </div>
+                <p style="font-size: 11px; color: #666; margin: 10px 0;">⏳ Tu solicitud será revisada por un administrador</p>
+                <button class="login-btn" id="registerBtn">Solicitar Registro</button>
+                <button type="button" class="register-toggle-btn" id="loginBackBtn">Volver al login</button>
+                <div class="login-message" id="registerMessage"></div>
             </div>
         </div>
     </div>
+</div>
 
+<!-- PANTALLA ADMIN -->
+<div id="adminScreen" class="admin-screen" style="display: none;">
+    <div class="admin-window">
+        <div class="admin-title-bar">
+            <div class="admin-title-text">👮 Panel de Administración - Portal de Enlaces</div>
+            <button class="admin-logout-btn" id="adminLogoutBtn">🚪 Cerrar Sesión</button>
+        </div>
+        <div class="admin-content">
+            <h2>Solicitudes de Registro Pendientes</h2>
+            <div id="requestsContainer" class="requests-container">
+                <p>Cargando solicitudes...</p>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- PANTALLA PRINCIPAL -->
     <div id="mainScreen" class="main-screen" style="display: none;">
-        <div class="floating-icon" id="floatingIcon" style="display: none;">📦</div>
+        <!-- Ícono flotante para reapertura -->
+        <div class="floating-icon" id="floatingIcon" style="display: none;">
+            <div class="icon-tooltip">Abrir Portal</div>
+        </div>
 
         <div class="window-container" id="windowContainer">
+            <!-- Barra de título -->
             <div class="title-bar" id="titleBar">
-                <span>Portal de Enlaces</span>
-                <div class="title-controls">
-                    <input type="range" id="opacitySlider" class="opacity-slider" min="30" max="100" value="95">
-                    <span id="opacityValue">95%</span>
-                    <button id="minBtn" class="btn-control">_</button>
-                    <button id="maxBtn" class="btn-control">□</button>
-                    <button id="logoutBtn" class="btn-control" title="Logout">🚪</button>
-                    <button id="closeBtn" class="btn-control">✕</button>
+                <div class="title-text">Portal de Enlaces</div>
+                <div class="window-buttons">
+                    <button class="min-btn" id="minBtn">_</button>
+                    <button class="max-btn" id="maxBtn">□</button>
+                    <button class="logout-btn" id="logoutBtn" title="Cerrar sesión">🚪</button>
+                    <button class="close-btn" id="closeBtn">✕</button>
                 </div>
             </div>
 
+            <!-- Contenido de la ventana -->
             <div class="window-content" id="windowContent">
-                <div id="syncStatus" class="sync-status">🔄 Cargando...</div>
-                <div id="buttonsGrid" class="buttons-grid"></div>
-                
-                <button id="expandAddBtn" class="btn-add">➕ Agregar Enlace</button>
+                <div class="sync-status" id="syncStatus">🔄 Sincronizando...</div>
+                <div class="buttons-grid" id="buttonsGrid">
+                    <!-- Los botones se generarán desde JavaScript -->
+                </div>
 
-                <div id="addSection" class="add-section" style="display: none;">
+                <!-- Botón para expandir la sección de agregar -->
+                <button class="expand-add-btn" id="expandAddBtn">
+                    ➕ Agregar Nuevo Enlace
+                </button>
+
+                <!-- Sección para agregar nuevos botones (minimizada por defecto) -->
+                <div class="add-button-section" id="addSection" style="display: none;">
                     <div class="form-group">
-                        <label>Nombre:</label>
-                        <input type="text" id="btnName" placeholder="Google">
+                        <label for="btnName">Nombre del botón:</label>
+                        <input type="text" id="btnName" placeholder="Ej: Google">
                     </div>
                     <div class="form-group">
-                        <label>URL:</label>
-                        <input type="text" id="btnUrl" placeholder="https://google.com">
+                        <label for="btnUrl">URL:</label>
+                        <input type="text" id="btnUrl" placeholder="Ej: https://google.com">
                     </div>
                     <div class="form-group">
-                        <label>Emoji:</label>
-                        <input type="text" id="btnEmoji" placeholder="🔗" maxlength="2" value="🔗">
-                        <button type="button" id="emojiSelectorBtn" class="btn-small">Seleccionar</button>
-                        <div id="emojiModal" class="emoji-modal" style="display: none;">
-                            <div id="emojiGrid" class="emoji-grid"></div>
+                        <label for="btnEmoji">Emoticono:</label>
+                        <div class="emoji-picker-container">
+                            <input type="text" id="btnEmoji" placeholder="🔗" maxlength="2" value="🔗">
+                            <button class="emoji-selector-btn" id="emojiSelectorBtn">Seleccionar</button>
+                        </div>
+                        <!-- Modal de selector de emojis -->
+                        <div class="emoji-modal" id="emojiModal" style="display: none;">
+                            <div class="emoji-grid" id="emojiGrid"></div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Color:</label>
-                        <div class="color-picker">
-                            <input type="color" id="btnColorPicker" value="#5b9cde">
+                        <label for="btnColor">Color del botón:</label>
+                        <div class="color-picker-container">
+                            <input type="color" id="btnColorPicker" value="#5b9cde" title="Selecciona un color">
                             <input type="text" id="btnColorHex" placeholder="#5b9cde" maxlength="7">
-                            <span id="colorPreview" class="color-preview"></span>
+                            <span class="color-preview" id="colorPreview"></span>
                         </div>
                     </div>
-                    <button id="addBtn" class="btn-login">✓ Agregar</button>
-                    <button id="cancelBtn" class="btn-register">✕ Cancelar</button>
+                    <button class="add-btn" id="addBtn">✓ Agregar Botón</button>
+                    <button class="cancel-btn" id="cancelBtn">✕ Cancelar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
 </html>
