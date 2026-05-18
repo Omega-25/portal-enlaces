@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://hxdexehhsrrwjnjmhbxa.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
 
 let supabaseClient = null;
-let syncInterval = null;  // Para controlar el intervalo de sincronización
+let syncInterval = null;
 
 function initSupabase() {
     try {
@@ -14,6 +14,39 @@ function initSupabase() {
     } catch (error) {
         console.error('Error inicializando Supabase:', error);
     }
+}
+
+// ========== FUNCIONES DE OPACIDAD ==========
+
+function setupOpacityControl() {
+    const opacitySlider = document.getElementById('opacitySlider');
+    const opacityValue = document.getElementById('opacityValue');
+    const windowContainer = document.querySelector('.window-container');
+    
+    if (!opacitySlider || !windowContainer) return;
+    
+    // Cargar opacidad guardada
+    const savedOpacity = localStorage.getItem('windowOpacity');
+    if (savedOpacity) {
+        opacitySlider.value = savedOpacity;
+        const opacityPercent = parseInt(savedOpacity);
+        windowContainer.style.opacity = opacityPercent / 100;
+        opacityValue.textContent = opacityPercent + '%';
+    }
+    
+    // Cambiar opacidad en tiempo real
+    opacitySlider.addEventListener('input', (e) => {
+        const opacityPercent = parseInt(e.target.value);
+        const opacityDecimal = opacityPercent / 100;
+        
+        windowContainer.style.opacity = opacityDecimal;
+        opacityValue.textContent = opacityPercent + '%';
+        
+        // Guardar en localStorage
+        localStorage.setItem('windowOpacity', opacityPercent);
+        
+        console.log('Opacidad cambiada a:', opacityPercent + '%');
+    });
 }
 
 const emojiList = [
@@ -104,7 +137,6 @@ async function registerUser(username, password, email = '') {
             return false;
         }
 
-        // Verificar si el usuario ya existe
         const { data: existingUser } = await supabaseClient
             .from('users')
             .select('id')
@@ -116,18 +148,15 @@ async function registerUser(username, password, email = '') {
             return false;
         }
 
-        // Codificar contraseña en base64
         const encodedPassword = btoa(password);
 
-        // CREAR USUARIO DIRECTAMENTE EN LA TABLA USERS
-        // con approved = false (pendiente de aprobación)
         const { data, error } = await supabaseClient
             .from('users')
             .insert([{
                 username: username,
                 password: encodedPassword,
                 email: email,
-                approved: false  // Pendiente de aprobación
+                approved: false
             }])
             .select();
 
@@ -180,7 +209,6 @@ async function validateLoginFromSupabase(username, password) {
             return null;
         }
 
-        // Verificar si el usuario está aprobado
         if (!data.approved) {
             alert('⏳ Tu cuenta está pendiente de aprobación.\n\nEspera a que el administrador la revise.');
             return null;
@@ -311,7 +339,6 @@ function handleLogout() {
         isLoggedIn = false;
         currentUser = null;
         
-        // Detener la sincronización automática
         if (syncInterval) {
             clearInterval(syncInterval);
             syncInterval = null;
@@ -373,13 +400,11 @@ async function loadButtonsFromSupabase() {
     }
 }
 
-// NUEVA FUNCIÓN: Sincronización automática
 async function autoSyncButtons() {
     console.log('Sincronización automática iniciada...');
     
     const buttons = await loadButtonsFromSupabase();
     
-    // Solo re-renderizar si hay cambios
     if (JSON.stringify(buttons) !== JSON.stringify(currentButtons)) {
         console.log('Cambios detectados, actualizando interfaz...');
         currentButtons = buttons;
@@ -387,7 +412,6 @@ async function autoSyncButtons() {
     }
 }
 
-// NUEVA FUNCIÓN: Iniciar sincronización automática
 function startAutoSync() {
     if (syncInterval) {
         clearInterval(syncInterval);
@@ -395,14 +419,11 @@ function startAutoSync() {
     
     console.log('Iniciando sincronización automática cada 5 segundos');
     
-    // Sincronizar cada 5 segundos (5000 ms)
-    // Cambia a 10000 si prefieres cada 10 segundos
     syncInterval = setInterval(() => {
         autoSyncButtons();
-    }, 5000);  // 5 segundos
+    }, 5000);
 }
 
-// NUEVA FUNCIÓN: Detener sincronización automática
 function stopAutoSync() {
     if (syncInterval) {
         clearInterval(syncInterval);
@@ -438,7 +459,6 @@ async function saveButtonToSupabase(button) {
         console.log('Botón guardado:', data);
         updateSyncStatus('✅ Guardado');
         
-        // Forzar sincronización inmediata después de guardar
         await autoSyncButtons();
         
         return data[0];
@@ -469,7 +489,6 @@ async function deleteButtonFromSupabase(buttonId) {
         console.log('Botón eliminado');
         updateSyncStatus('✅ Eliminado');
         
-        // Forzar sincronización inmediata después de eliminar
         await autoSyncButtons();
         
     } catch (error) {
@@ -729,7 +748,8 @@ async function initializeMainScreen() {
     
     setupColorPicker();
     
-    // INICIAR SINCRONIZACIÓN AUTOMÁTICA
+    setupOpacityControl();
+    
     startAutoSync();
 
     const titleBar = document.getElementById('titleBar');
