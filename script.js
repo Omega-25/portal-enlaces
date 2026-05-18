@@ -10,9 +10,12 @@ function initSupabase() {
         if (window.supabase && window.supabase.createClient) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('Supabase inicializado correctamente');
+        } else {
+            console.log('Supabase no disponible, usando localStorage');
         }
     } catch (error) {
         console.error('Error inicializando Supabase:', error);
+        console.log('Continuando sin Supabase...');
     }
 }
 
@@ -25,7 +28,6 @@ function setupOpacityControl() {
     
     if (!opacitySlider || !windowContainer) return;
     
-    // Cargar opacidad guardada
     const savedOpacity = localStorage.getItem('windowOpacity');
     if (savedOpacity) {
         opacitySlider.value = savedOpacity;
@@ -34,15 +36,12 @@ function setupOpacityControl() {
         opacityValue.textContent = opacityPercent + '%';
     }
     
-    // Cambiar opacidad en tiempo real
     opacitySlider.addEventListener('input', (e) => {
         const opacityPercent = parseInt(e.target.value);
         const opacityDecimal = opacityPercent / 100;
         
         windowContainer.style.opacity = opacityDecimal;
         opacityValue.textContent = opacityPercent + '%';
-        
-        // Guardar en localStorage
         localStorage.setItem('windowOpacity', opacityPercent);
         
         console.log('Opacidad cambiada a:', opacityPercent + '%');
@@ -133,10 +132,27 @@ async function registerUser(username, password, email = '') {
         }
 
         if (!supabaseClient) {
-            alert('Servidor no disponible. Intenta más tarde.');
-            return false;
+            console.log('Usando localStorage para registro');
+            let users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
+            
+            if (users.find(u => u.username === username)) {
+                alert('Este usuario ya existe');
+                return false;
+            }
+            
+            users.push({
+                username: username,
+                password: btoa(password),
+                email: email,
+                approved: true
+            });
+            
+            localStorage.setItem('portalUsers', JSON.stringify(users));
+            alert('¡Usuario registrado correctamente!\nAhora puedes iniciar sesión.');
+            return true;
         }
 
+        // Código de Supabase si está disponible
         const { data: existingUser } = await supabaseClient
             .from('users')
             .select('id')
@@ -181,23 +197,29 @@ async function validateLoginFromSupabase(username, password) {
     try {
         console.log('Validando login para:', username);
 
-        if (!supabaseClient) {
-            const users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
-            const user = users.find(u => u.username === username);
-            
-            if (!user) return null;
-
+        // Primero intenta con localStorage
+        const users = JSON.parse(localStorage.getItem('portalUsers') || '[]');
+        const localUser = users.find(u => u.username === username);
+        
+        if (localUser) {
             const encodedPassword = btoa(password);
-            if (user.password === encodedPassword) {
+            if (localUser.password === encodedPassword) {
                 return {
-                    username: user.username,
-                    email: user.email || '',
+                    username: localUser.username,
+                    email: localUser.email || '',
                     approved: true
                 };
             }
             return null;
         }
 
+        // Si no está en localStorage y Supabase no está disponible
+        if (!supabaseClient) {
+            console.log('Usuario no encontrado');
+            return null;
+        }
+
+        // Intenta con Supabase
         const { data, error } = await supabaseClient
             .from('users')
             .select('*')
@@ -205,7 +227,7 @@ async function validateLoginFromSupabase(username, password) {
             .single();
 
         if (error || !data) {
-            console.log('Usuario no encontrado');
+            console.log('Usuario no encontrado en Supabase');
             return null;
         }
 
@@ -342,7 +364,6 @@ function handleLogout() {
         if (syncInterval) {
             clearInterval(syncInterval);
             syncInterval = null;
-            console.log('Sincronización automática detenida');
         }
         
         document.getElementById('mainScreen').style.display = 'none';
@@ -366,9 +387,18 @@ function updateSyncStatus(message, type = 'success') {
 
 async function loadButtonsFromSupabase() {
     try {
+        const saved = localStorage.getItem('portalButtons');
+        if (saved) {
+            updateSyncStatus('✅ Sincronizado');
+            currentButtons = JSON.parse(saved);
+            return JSON.parse(saved);
+        }
+
         if (!supabaseClient) {
-            const saved = localStorage.getItem('portalButtons');
-            return saved ? JSON.parse(saved) : defaultButtons;
+            updateSyncStatus('✅ Sincronizado');
+            currentButtons = defaultButtons;
+            localStorage.setItem('portalButtons', JSON.stringify(defaultButtons));
+            return defaultButtons;
         }
 
         updateSyncStatus('🔄 Sincronizando...', 'syncing');
@@ -389,6 +419,7 @@ async function loadButtonsFromSupabase() {
 
         updateSyncStatus('✅ Sincronizado');
         currentButtons = defaultButtons;
+        localStorage.setItem('portalButtons', JSON.stringify(defaultButtons));
         return defaultButtons;
     } catch (error) {
         console.error('Error al cargar desde Supabase:', error);
@@ -401,8 +432,6 @@ async function loadButtonsFromSupabase() {
 }
 
 async function autoSyncButtons() {
-    console.log('Sincronización automática iniciada...');
-    
     const buttons = await loadButtonsFromSupabase();
     
     if (JSON.stringify(buttons) !== JSON.stringify(currentButtons)) {
@@ -424,25 +453,21 @@ function startAutoSync() {
     }, 5000);
 }
 
-function stopAutoSync() {
-    if (syncInterval) {
-        clearInterval(syncInterval);
-        syncInterval = null;
-        console.log('Sincronización automática detenida');
-    }
-}
-
 async function saveButtonToSupabase(button) {
     try {
+        const saved = localStorage.getItem('portalButtons') || '[]';
+        const buttons = JSON.parse(saved);
+        buttons.push(button);
+        localStorage.setItem('portalButtons', JSON.stringify(buttons));
+        
+        updateSyncStatus('🔄 Guardando...', 'syncing');
+
         if (!supabaseClient) {
-            const saved = localStorage.getItem('portalButtons') || '[]';
-            const buttons = JSON.parse(saved);
-            buttons.push(button);
-            localStorage.setItem('portalButtons', JSON.stringify(buttons));
+            console.log('Botón guardado en localStorage');
+            updateSyncStatus('✅ Guardado');
+            await autoSyncButtons();
             return button;
         }
-
-        updateSyncStatus('🔄 Guardando...', 'syncing');
 
         const { data, error } = await supabaseClient
             .from('buttons')
@@ -465,19 +490,24 @@ async function saveButtonToSupabase(button) {
     } catch (error) {
         console.error('Error al guardar:', error);
         updateSyncStatus('❌ Error al guardar', 'error');
-        
-        const saved = localStorage.getItem('portalButtons') || '[]';
-        const buttons = JSON.parse(saved);
-        buttons.push(button);
-        localStorage.setItem('portalButtons', JSON.stringify(buttons));
     }
 }
 
 async function deleteButtonFromSupabase(buttonId) {
     try {
-        if (!supabaseClient) return;
+        const saved = localStorage.getItem('portalButtons') || '[]';
+        let buttons = JSON.parse(saved);
+        buttons = buttons.filter(b => b.id !== buttonId);
+        localStorage.setItem('portalButtons', JSON.stringify(buttons));
 
         updateSyncStatus('🔄 Eliminando...', 'syncing');
+
+        if (!supabaseClient) {
+            console.log('Botón eliminado de localStorage');
+            updateSyncStatus('✅ Eliminado');
+            await autoSyncButtons();
+            return;
+        }
 
         const { error } = await supabaseClient
             .from('buttons')
@@ -747,9 +777,7 @@ async function initializeMainScreen() {
     renderButtons(buttons);
     
     setupColorPicker();
-    
     setupOpacityControl();
-    
     startAutoSync();
 
     const titleBar = document.getElementById('titleBar');
