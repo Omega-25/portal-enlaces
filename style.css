@@ -19,7 +19,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: url('https://img2.storyblok.com/fit-in/1000x700/f/157036/2132x1194/3754a641ab/carousel-bg.jpg') center/cover no-repeat;
+    background: url('https://images.unsplash.com/photo-1557672172-298e090d0f80?w=1920&q=80') center/cover no-repeat;
     background-attachment: fixed;
     z-index: -1;
 }
@@ -136,6 +136,29 @@ body {
     background: linear-gradient(135deg, #357abd, #4a90e2);
 }
 
+.register-toggle-btn {
+    width: 100%;
+    padding: 8px 16px;
+    border: 2px solid;
+    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    background: linear-gradient(135deg, #90ee90, #7ad67a);
+    color: #000;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: "Tahoma", sans-serif;
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.register-toggle-btn:hover {
+    background: linear-gradient(135deg, #a8ff9e, #90ee90);
+}
+
+.register-toggle-btn:active {
+    border-color: #808080 #dfdfdf #dfdfdf #808080;
+    background: linear-gradient(135deg, #7ad67a, #90ee90);
+}
+
 .login-message {
     font-size: 11px;
     color: #c41e3a;
@@ -172,6 +195,7 @@ body {
     cursor: move;
     user-select: none;
     backdrop-filter: blur(10px);
+    transition: opacity 0.2s ease;
 }
 
 /* Ventana maximizada */
@@ -211,6 +235,79 @@ body {
 .title-text {
     flex-grow: 1;
     padding: 2px 0;
+}
+
+/* ========== CONTROL DE OPACIDAD ========== */
+.opacity-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 15px;
+    flex-shrink: 0;
+}
+
+.opacity-control label {
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.opacity-slider {
+    width: 120px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+/* Estilo del thumb (deslizador) para Chrome/Edge */
+.opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffffff, #e0e0e0);
+    cursor: pointer;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+    background: linear-gradient(135deg, #ffffff, #ffffff);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    transform: scale(1.1);
+}
+
+/* Estilo del thumb para Firefox */
+.opacity-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffffff, #e0e0e0);
+    cursor: pointer;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+}
+
+.opacity-slider::-moz-range-thumb:hover {
+    background: linear-gradient(135deg, #ffffff, #ffffff);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    transform: scale(1.1);
+}
+
+#opacityValue {
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 35px;
+    text-align: right;
 }
 
 .window-buttons {
@@ -288,6 +385,31 @@ body {
 
 .window-content::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(224, 224, 224, 0.9));
+}
+
+/* Indicador de sincronización */
+.sync-status {
+    padding: 6px 8px;
+    margin-bottom: 10px;
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid #4CAF50;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #2E7D32;
+    text-align: center;
+}
+
+.sync-status.syncing {
+    background: rgba(255, 152, 0, 0.2);
+    border-color: #FF9800;
+    color: #E65100;
+}
+
+.sync-status.error {
+    background: rgba(244, 67, 54, 0.2);
+    border-color: #F44336;
+    color: #C62828;
 }
 
 /* Grid de botones */
@@ -749,199 +871,18 @@ body {
         bottom: 20px;
         right: 20px;
     }
-}
 
-/* Indicador de sincronización */
-.sync-status {
-    padding: 6px 8px;
-    margin-bottom: 10px;
-    background: rgba(76, 175, 80, 0.2);
-    border: 1px solid #4CAF50;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: bold;
-    color: #2E7D32;
-    text-align: center;
-}
+    .opacity-control {
+        margin: 0 10px;
+        gap: 5px;
+    }
 
-.sync-status.syncing {
-    background: rgba(255, 152, 0, 0.2);
-    border-color: #FF9800;
-    color: #E65100;
-}
+    .opacity-slider {
+        width: 80px;
+    }
 
-.sync-status.error {
-    background: rgba(244, 67, 54, 0.2);
-    border-color: #F44336;
-    color: #C62828;
-}
-
-/* Botón para cambiar entre login y registro */
-.register-toggle-btn {
-    width: 100%;
-    padding: 8px 16px;
-    border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
-    background: linear-gradient(135deg, #90ee90, #7ad67a);
-    color: #000;
-    font-size: 11px;
-    font-weight: bold;
-    font-family: "Tahoma", sans-serif;
-    cursor: pointer;
-    transition: all 0.1s;
-    margin-top: 8px;
-}
-
-.register-toggle-btn:hover {
-    background: linear-gradient(135deg, #a8ff9e, #90ee90);
-}
-
-.register-toggle-btn:active {
-    border-color: #808080 #dfdfdf #dfdfdf #808080;
-    background: linear-gradient(135deg, #7ad67a, #90ee90);
-}
-
-/* Estilos del panel de admin */
-.admin-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    background: rgba(0, 0, 0, 0.2);
-}
-
-.admin-window {
-    width: 900px;
-    max-width: 95vw;
-    background: linear-gradient(180deg, #f0f0f0 0%, #e8e8e8 100%);
-    border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
-    box-shadow: 
-        1px 1px 0 #ffffff inset,
-        -1px -1px 0 #000000 inset,
-        3px 3px 10px rgba(0, 0, 0, 0.3) outset;
-    max-height: 85vh;
-    overflow-y: auto;
-    backdrop-filter: blur(10px);
-}
-
-.admin-title-bar {
-    background: linear-gradient(90deg, #ff6b6b 0%, #ff4444 100%);
-    color: white;
-    padding: 8px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: bold;
-    font-size: 12px;
-    user-select: none;
-}
-
-.admin-title-text {
-    flex-grow: 1;
-}
-
-.admin-logout-btn {
-    background: rgba(0, 0, 0, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 11px;
-    border-radius: 2px;
-    transition: all 0.2s;
-}
-
-.admin-logout-btn:hover {
-    background: rgba(0, 0, 0, 0.4);
-}
-
-.admin-content {
-    padding: 20px;
-    background: rgba(240, 240, 240, 0.95);
-}
-
-.admin-content h2 {
-    color: #000;
-    margin-bottom: 20px;
-    font-size: 16px;
-}
-
-.requests-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-}
-
-.request-item {
-    background: white;
-    border: 2px solid #dfdfdf;
-    border-radius: 4px;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.request-info h3 {
-    margin: 0;
-    color: #000;
-    font-size: 14px;
-}
-
-.request-info p {
-    margin: 5px 0;
-    color: #666;
-    font-size: 11px;
-}
-
-.request-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.approve-btn,
-.reject-btn {
-    flex: 1;
-    padding: 8px 12px;
-    border: 2px solid;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.1s;
-    font-family: "Tahoma", sans-serif;
-}
-
-.approve-btn {
-    background: linear-gradient(135deg, #90ee90, #7ad67a);
-    color: #000;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
-}
-
-.approve-btn:hover {
-    background: linear-gradient(135deg, #a8ff9e, #90ee90);
-}
-
-.approve-btn:active {
-    border-color: #808080 #dfdfdf #dfdfdf #808080;
-}
-
-.reject-btn {
-    background: linear-gradient(135deg, #ff6b6b, #ff4444);
-    color: white;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
-}
-
-.reject-btn:hover {
-    background: linear-gradient(135deg, #ff8888, #ff5555);
-}
-
-.reject-btn:active {
-    border-color: #808080 #dfdfdf #dfdfdf #808080;
+    #opacityValue {
+        min-width: 30px;
+        font-size: 10px;
+    }
 }
