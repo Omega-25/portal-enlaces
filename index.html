@@ -1,23 +1,4 @@
 <!DOCTYPE html>
-<html lang="en" class="<html lang="es">">
-
-  <head>
-    <meta charset="UTF-8">
-    <title>Pagina Personal</title>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Menú estilo Windows</title>
-
-    <!-- Conexión al CSS -->
-    <link rel="stylesheet" href="style.css">
-</head><link rel="stylesheet" href="./style.css">
-
-  </head>
-    
-  <body>
-  <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -30,72 +11,57 @@
     <div class="desktop-background"></div>
     
     <!-- PANTALLA DE LOGIN -->
-<div id="loginScreen" class="login-screen">
-    <div class="login-window">
-        <div class="login-title-bar">
-            <div class="login-title-text">Portal de Enlaces - Iniciar Sesión</div>
-        </div>
-        <div class="login-content">
-            <div class="login-icon">🔐</div>
-            
-            <!-- FORMULARIO DE LOGIN -->
-            <div class="login-form" id="loginForm">
-                <div class="login-form-group">
-                    <label for="loginUsername">Usuario:</label>
-                    <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autofocus>
-                </div>
-                <div class="login-form-group">
-                    <label for="loginPassword">Contraseña:</label>
-                    <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña">
-                </div>
-                <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
-                <button type="button" class="register-toggle-btn" id="registerToggleBtn">¿No tienes cuenta? Regístrate</button>
-                <div class="login-message" id="loginMessage"></div>
-                <p style="font-size: 10px; color: #999; margin-top: 15px; text-align: center;">👮 Aprobación de cuentas vía Supabase</p>
+    <div id="loginScreen" class="login-screen">
+        <div class="login-window">
+            <div class="login-title-bar">
+                <div class="login-title-text">Portal de Enlaces - Iniciar Sesión</div>
             </div>
+            <div class="login-content">
+                <div class="login-icon">🔐</div>
+                
+                <!-- FORMULARIO DE LOGIN -->
+                <div class="login-form" id="loginForm">
+                    <div class="login-form-group">
+                        <label for="loginUsername">Usuario:</label>
+                        <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autofocus>
+                    </div>
+                    <div class="login-form-group">
+                        <label for="loginPassword">Contraseña:</label>
+                        <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña">
+                    </div>
+                    <button class="login-btn" id="loginBtn">Iniciar Sesión</button>
+                    <button type="button" class="register-toggle-btn" id="registerToggleBtn">¿No tienes cuenta? Regístrate</button>
+                    <div class="login-message" id="loginMessage"></div>
+                    <p style="font-size: 10px; color: #999; margin-top: 15px; text-align: center;">👮 Aprobación de cuentas vía Supabase</p>
+                </div>
 
-            <!-- FORMULARIO DE REGISTRO -->
-            <div class="login-form" id="registerForm" style="display: none;">
-                <div class="login-form-group">
-                    <label for="registerUsername">Usuario:</label>
-                    <input type="text" id="registerUsername" placeholder="Elige un usuario">
+                <!-- FORMULARIO DE REGISTRO -->
+                <div class="login-form" id="registerForm" style="display: none;">
+                    <div class="login-form-group">
+                        <label for="registerUsername">Usuario:</label>
+                        <input type="text" id="registerUsername" placeholder="Elige un usuario">
+                    </div>
+                    <div class="login-form-group">
+                        <label for="registerEmail">Email:</label>
+                        <input type="email" id="registerEmail" placeholder="tu@email.com">
+                    </div>
+                    <div class="login-form-group">
+                        <label for="registerPassword">Contraseña:</label>
+                        <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="login-form-group">
+                        <label for="registerConfirmPassword">Confirmar Contraseña:</label>
+                        <input type="password" id="registerConfirmPassword" placeholder="Repite tu contraseña">
+                    </div>
+                    <p style="font-size: 11px; color: #666; margin: 10px 0;">⏳ Tu cuenta será aprobada por el administrador</p>
+                    <button class="login-btn" id="registerBtn">Solicitar Registro</button>
+                    <button type="button" class="register-toggle-btn" id="loginBackBtn">Volver al login</button>
+                    <div class="login-message" id="registerMessage"></div>
                 </div>
-                <div class="login-form-group">
-                    <label for="registerEmail">Email:</label>
-                    <input type="email" id="registerEmail" placeholder="tu@email.com">
-                </div>
-                <div class="login-form-group">
-                    <label for="registerPassword">Contraseña:</label>
-                    <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres">
-                </div>
-                <div class="login-form-group">
-                    <label for="registerConfirmPassword">Confirmar Contraseña:</label>
-                    <input type="password" id="registerConfirmPassword" placeholder="Repite tu contraseña">
-                </div>
-                <p style="font-size: 11px; color: #666; margin: 10px 0;">⏳ Tu solicitud será revisada por un administrador</p>
-                <button class="login-btn" id="registerBtn">Solicitar Registro</button>
-                <button type="button" class="register-toggle-btn" id="loginBackBtn">Volver al login</button>
-                <div class="login-message" id="registerMessage"></div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- PANTALLA ADMIN -->
-<div id="adminScreen" class="admin-screen" style="display: none;">
-    <div class="admin-window">
-        <div class="admin-title-bar">
-            <div class="admin-title-text">👮 Panel de Administración - Portal de Enlaces</div>
-            <button class="admin-logout-btn" id="adminLogoutBtn">🚪 Cerrar Sesión</button>
-        </div>
-        <div class="admin-content">
-            <h2>Solicitudes de Registro Pendientes</h2>
-            <div id="requestsContainer" class="requests-container">
-                <p>Cargando solicitudes...</p>
-            </div>
-        </div>
-    </div>
-</div>
     <!-- PANTALLA PRINCIPAL -->
     <div id="mainScreen" class="main-screen" style="display: none;">
         <!-- Ícono flotante para reapertura -->
@@ -107,6 +73,11 @@
             <!-- Barra de título -->
             <div class="title-bar" id="titleBar">
                 <div class="title-text">Portal de Enlaces</div>
+                <div class="opacity-control">
+                    <label for="opacitySlider" title="Cambiar transparencia">🔍</label>
+                    <input type="range" id="opacitySlider" min="30" max="100" value="95" class="opacity-slider">
+                    <span id="opacityValue">95%</span>
+                </div>
                 <div class="window-buttons">
                     <button class="min-btn" id="minBtn">_</button>
                     <button class="max-btn" id="maxBtn">□</button>
@@ -165,9 +136,4 @@
 
     <script src="script.js"></script>
 </body>
-</html>
-    <script  src="./script.js"></script>
-
-  </body>
-  
 </html>
