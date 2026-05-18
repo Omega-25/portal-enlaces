@@ -3,7 +3,6 @@ const SUPABASE_URL = 'https://hxdexehhsrrwjnjmhbxa.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_Ai_NyPeY_s04W25RUfq26w_BHCqHtGJ';
 
 let supabaseClient = null;
-let syncInterval = null;  // Para controlar el intervalo de sincronización
 
 function initSupabase() {
     try {
@@ -310,14 +309,6 @@ function handleLogout() {
     if (confirm('¿Deseas cerrar sesión?')) {
         isLoggedIn = false;
         currentUser = null;
-        
-        // Detener la sincronización automática
-        if (syncInterval) {
-            clearInterval(syncInterval);
-            syncInterval = null;
-            console.log('Sincronización automática detenida');
-        }
-        
         document.getElementById('mainScreen').style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('loginUsername').value = '';
@@ -373,44 +364,6 @@ async function loadButtonsFromSupabase() {
     }
 }
 
-// NUEVA FUNCIÓN: Sincronización automática
-async function autoSyncButtons() {
-    console.log('Sincronización automática iniciada...');
-    
-    const buttons = await loadButtonsFromSupabase();
-    
-    // Solo re-renderizar si hay cambios
-    if (JSON.stringify(buttons) !== JSON.stringify(currentButtons)) {
-        console.log('Cambios detectados, actualizando interfaz...');
-        currentButtons = buttons;
-        renderButtons(buttons);
-    }
-}
-
-// NUEVA FUNCIÓN: Iniciar sincronización automática
-function startAutoSync() {
-    if (syncInterval) {
-        clearInterval(syncInterval);
-    }
-    
-    console.log('Iniciando sincronización automática cada 5 segundos');
-    
-    // Sincronizar cada 5 segundos (5000 ms)
-    // Cambia a 10000 si prefieres cada 10 segundos
-    syncInterval = setInterval(() => {
-        autoSyncButtons();
-    }, 5000);  // 5 segundos
-}
-
-// NUEVA FUNCIÓN: Detener sincronización automática
-function stopAutoSync() {
-    if (syncInterval) {
-        clearInterval(syncInterval);
-        syncInterval = null;
-        console.log('Sincronización automática detenida');
-    }
-}
-
 async function saveButtonToSupabase(button) {
     try {
         if (!supabaseClient) {
@@ -437,10 +390,6 @@ async function saveButtonToSupabase(button) {
 
         console.log('Botón guardado:', data);
         updateSyncStatus('✅ Guardado');
-        
-        // Forzar sincronización inmediata después de guardar
-        await autoSyncButtons();
-        
         return data[0];
     } catch (error) {
         console.error('Error al guardar:', error);
@@ -468,10 +417,6 @@ async function deleteButtonFromSupabase(buttonId) {
 
         console.log('Botón eliminado');
         updateSyncStatus('✅ Eliminado');
-        
-        // Forzar sincronización inmediata después de eliminar
-        await autoSyncButtons();
-        
     } catch (error) {
         console.error('Error al eliminar:', error);
         updateSyncStatus('❌ Error al eliminar', 'error');
@@ -658,6 +603,9 @@ async function addButton() {
 
     toggleAddSection();
     
+    const buttons = await loadButtonsFromSupabase();
+    renderButtons(buttons);
+    
     alert('¡Botón agregado correctamente!');
 }
 
@@ -728,9 +676,6 @@ async function initializeMainScreen() {
     renderButtons(buttons);
     
     setupColorPicker();
-    
-    // INICIAR SINCRONIZACIÓN AUTOMÁTICA
-    startAutoSync();
 
     const titleBar = document.getElementById('titleBar');
     const windowContainer = document.querySelector('.window-container');
